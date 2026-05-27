@@ -16,7 +16,7 @@ import type { EventTypeMetaDataSchema } from "@calcom/prisma/zod-utils";
 import type { UserProfile } from "@calcom/types/UserProfile";
 import { handleOrgRedirect } from "@lib/handleOrgRedirect";
 import type { EmbedProps } from "app/WithEmbedSSR";
-import type { GetServerSideProps } from "next";
+import type { GetServerSideProps, GetServerSidePropsContext } from "next";
 import type { z } from "zod";
 
 const log = logger.getSubLogger({ prefix: ["[[pages/[user]]]"] });
@@ -75,9 +75,15 @@ type UserPageProps = {
   isOrgSEOIndexable: boolean | undefined;
 } & EmbedProps;
 
+function getCurrentOrgDomain(context: GetServerSidePropsContext): string | null {
+  const orgSlug = context.params?.orgSlug;
+  if (typeof orgSlug !== "string" || !orgSlug) return null;
+  return orgSlug;
+}
+
 export const getServerSideProps: GetServerSideProps<UserPageProps> = async (context) => {
-  const currentOrgDomain = null;
-  const isValidOrgDomain = false;
+  const currentOrgDomain = getCurrentOrgDomain(context);
+  const isValidOrgDomain = !!currentOrgDomain;
   const usernameList = getUsernameList(context.query.user as string);
   const isARedirectFromNonOrgLink = context.query.orgRedirection === "true";
   const dataFetchStart = Date.now();

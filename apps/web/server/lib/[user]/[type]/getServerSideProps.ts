@@ -116,8 +116,8 @@ async function getDynamicGroupPageProps(context: GetServerSidePropsContext) {
   const { user: usernames, type: slug } = paramsSchema.parse(context.params);
   const { rescheduleUid, bookingUid } = context.query;
   const allowRescheduleForCancelledBooking = context.query.allowRescheduleForCancelledBooking === "true";
-  const currentOrgDomain = null;
-  const isValidOrgDomain = false;
+  const currentOrgDomain = getCurrentOrgDomain(context);
+  const isValidOrgDomain = !!currentOrgDomain;
   const org = isValidOrgDomain ? currentOrgDomain : null;
 
   const redirect = await handleOrgRedirect({
@@ -215,8 +215,8 @@ async function getUserPageProps(context: GetServerSidePropsContext) {
   const username = usernames[0];
   const { rescheduleUid, bookingUid } = context.query;
   const allowRescheduleForCancelledBooking = context.query.allowRescheduleForCancelledBooking === "true";
-  const currentOrgDomain = null;
-  const isValidOrgDomain = false;
+  const currentOrgDomain = getCurrentOrgDomain(context);
+  const isValidOrgDomain = !!currentOrgDomain;
 
   const redirect = await handleOrgRedirect({
     slugs: usernames,
@@ -308,6 +308,12 @@ const paramsSchema = z.object({
   type: z.string().transform((s) => slugify(s)),
   user: z.string().transform((s) => getUsernameList(s)),
 });
+
+function getCurrentOrgDomain(context: GetServerSidePropsContext): string | null {
+  const orgSlug = context.params?.orgSlug;
+  if (typeof orgSlug !== "string" || !orgSlug) return null;
+  return orgSlug;
+}
 
 // Booker page fetches a tiny bit of data server side, to determine early
 // whether the page should show an away state or dynamic booking not allowed.

@@ -1130,6 +1130,36 @@ export const getOptions = ({
               creationSource: CreationSource.WEBAPP,
             },
           });
+          if (orgId) {
+            const profile = await prisma.profile.upsert({
+              create: {
+                uid: ProfileRepository.generateProfileUid(),
+                userId: newUser.id,
+                organizationId: orgId,
+                username: newUsername,
+              },
+              update: {
+                username: newUsername,
+              },
+              where: {
+                userId_organizationId: {
+                  userId: newUser.id,
+                  organizationId: orgId,
+                },
+              },
+              select: {
+                id: true,
+              },
+            });
+            await prisma.user.update({
+              where: {
+                id: newUser.id,
+              },
+              data: {
+                movedToProfileId: profile.id,
+              },
+            });
+          }
           const linkAccountNewUserData = AdapterAccountPresenter.fromCalAccount(
             account,
             newUser.id,
