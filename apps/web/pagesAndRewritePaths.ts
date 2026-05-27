@@ -78,7 +78,7 @@ function getRegExpMatchingAllReservedRoutes(suffix: string): string {
 
   // Most files/dirs in public dir must not be rewritten to org pages. Ideally it should be all the content of public dir, but that can be done later
   // It is important to exclude the embed pages separately here because with SINGLE_ORG_SLUG enabled, the entire domain is eligible for rewrite vs just the org subdomain otherwise
-  const staticAssets = ["embed"];
+  const staticAssets = ["app-categories", "embed"];
 
   // FIXME: I am not sure why public is needed here, an asset 'test' in public isn't accessible through "/public/test" but only through "/test"
   // We should in fact scan through all files in public and exclude them instead.
