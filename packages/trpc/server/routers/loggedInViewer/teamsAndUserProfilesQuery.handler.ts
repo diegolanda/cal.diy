@@ -1,3 +1,7 @@
+import {
+  isTeamPermission,
+  TeamPermissionService,
+} from "@calcom/features/membership/services/TeamPermissionService";
 import { getPlaceholderAvatar } from "@calcom/lib/defaultAvatarImage";
 import { getUserAvatarUrl } from "@calcom/lib/getAvatarUrl";
 import type { PrismaClient } from "@calcom/prisma";
@@ -6,14 +10,6 @@ import { teamMetadataSchema } from "@calcom/prisma/zod-utils";
 import type { TrpcSessionUser } from "@calcom/trpc/server/types";
 import { TRPCError } from "@trpc/server";
 import type { TTeamsAndUserProfilesQueryInputSchema } from "./teamsAndUserProfilesQuery.schema";
-
-type PermissionString = string;
-class PermissionCheckService {
-  constructor(_prisma?: unknown) {}
-  async checkPermission(..._args: unknown[]) { return true; }
-  async hasPermission(..._args: unknown[]) { return true; }
-  async getTeamIdsWithPermission(..._args: unknown[]): Promise<number[]> { return []; }
-}
 
 type TeamsAndUserProfileOptions = {
   ctx: {
@@ -104,19 +100,27 @@ export const teamsAndUserProfilesQuery = async ({ ctx, input }: TeamsAndUserProf
   // Filter teams based on permission if provided
   let hasPermissionForFiltered: boolean[] = [];
   if (input?.withPermission) {
-    const permissionService = new PermissionCheckService();
+    const permissionService = new TeamPermissionService(prisma);
     const { permission, fallbackRoles } = input.withPermission;
+    const validFallbackRoles = fallbackRoles?.flatMap((role) => {
+      if (role === MembershipRole.MEMBER) return [MembershipRole.MEMBER];
+      if (role === MembershipRole.ADMIN) return [MembershipRole.ADMIN];
+      if (role === MembershipRole.OWNER) return [MembershipRole.OWNER];
+      return [];
+    });
 
-    const permissionChecks = await Promise.all(
-      teamsData.map((membership) =>
-        permissionService.checkPermission({
-          userId: ctx.user.id,
-          teamId: membership.team.id,
-          permission: permission as PermissionString,
-          fallbackRoles: fallbackRoles ? (fallbackRoles as MembershipRole[]) : [],
-        })
-      )
-    );
+    const permissionChecks = isTeamPermission(permission)
+      ? await Promise.all(
+          teamsData.map((membership) =>
+            permissionService.checkPermission({
+              userId: ctx.user.id,
+              teamId: membership.team.id,
+              permission,
+              fallbackRoles: validFallbackRoles,
+            })
+          )
+        )
+      : teamsData.map(() => false);
 
     // Store permission results for teams that passed the filter
     hasPermissionForFiltered = permissionChecks.filter((hasPermission) => hasPermission);
