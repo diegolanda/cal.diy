@@ -4,12 +4,6 @@ import { z } from "zod";
 import authedProcedure from "./authedProcedure";
 
 type PermissionString = string;
-class PermissionCheckService {
-  constructor(_prisma?: unknown) {}
-  async checkPermission(..._args: unknown[]) { return true; }
-  async hasPermission(..._args: unknown[]) { return true; }
-  async getTeamIdsWithPermission(..._args: unknown[]): Promise<number[]> { return []; }
-}
 
 /**
  * Creates a procedure that checks team-level PBAC permissions.
@@ -30,15 +24,25 @@ function createTeamPbacProcedure(
       })
     )
     .use(async ({ ctx, input, next }) => {
-      const permissionCheckService: PermissionCheckService = new PermissionCheckService();
-      const hasPermission: boolean = await permissionCheckService.checkPermission({
-        userId: ctx.user.id,
-        teamId: input.teamId,
-        permission,
-        fallbackRoles,
+      const membership = await ctx.prisma.membership.findFirst({
+        where: {
+          teamId: input.teamId,
+          userId: ctx.user.id,
+          accepted: true,
+          role: {
+            in: fallbackRoles,
+          },
+          team: {
+            isOrganization: false,
+            parentId: null,
+          },
+        },
+        select: {
+          id: true,
+        },
       });
 
-      if (!hasPermission) {
+      if (!membership) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: `Permission required: ${permission}`,
@@ -50,47 +54,20 @@ function createTeamPbacProcedure(
 }
 
 /**
- * Creates a procedure that checks organization-level PBAC permissions.
- * The organizationId is taken from ctx.user.organizationId.
+ * Rejects organization permissions because Cal.diy does not support Organizations.
  *
- * @param permission - The specific permission required (e.g., "organization.read", "organization.update")
- * @param fallbackRoles - Roles to check when PBAC is disabled (defaults to ["ADMIN", "OWNER"])
- * @returns A procedure that checks the specified permission for the organization and adds organizationId to context
+ * @param permission - The requested organization permission
+ * @param _fallbackRoles - Preserves compatibility with callers from the original PBAC API
+ * @returns A procedure that fails closed for organization requests
  */
 function createOrgPbacProcedure(
   permission: PermissionString,
-  fallbackRoles: MembershipRole[] = [MembershipRole.ADMIN, MembershipRole.OWNER]
-) {
-  return authedProcedure.use(async ({ ctx, next }) => {
-    const organizationId = ctx.user.organizationId;
-
-    if (!organizationId) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "You are not a member of any organization.",
-      });
-    }
-
-    const permissionCheckService = new PermissionCheckService();
-    const hasPermission = await permissionCheckService.checkPermission({
-      userId: ctx.user.id,
-      teamId: organizationId,
-      permission,
-      fallbackRoles,
-    });
-
-    if (!hasPermission) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: `Permission required: ${permission}`,
-      });
-    }
-
-    return next({
-      ctx: {
-        ...ctx,
-        organizationId,
-      },
+  _fallbackRoles: MembershipRole[] = [MembershipRole.ADMIN, MembershipRole.OWNER]
+): ReturnType<typeof authedProcedure.use> {
+  return authedProcedure.use(async () => {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `Organization permission is not supported: ${permission}`,
     });
   });
 }
