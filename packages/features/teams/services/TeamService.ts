@@ -175,7 +175,7 @@ export class TeamService {
     membershipId: number;
   }): Promise<{ id: number }> {
     return this.runSerializable(async (transaction) => {
-      await this.assertCanManage(transaction, actorId, teamId);
+      const actorRole = await this.assertCanManage(transaction, actorId, teamId);
       const membership = await transaction.membership.findFirst({
         where: {
           id: membershipId,
@@ -189,6 +189,9 @@ export class TeamService {
       }
 
       if (membership.accepted && membership.role === MembershipRole.OWNER) {
+        if (actorRole !== MembershipRole.OWNER) {
+          throw new ErrorWithCode(ErrorCode.Forbidden, "Only a Team owner can remove another owner");
+        }
         const ownerCount = await transaction.membership.count({
           where: { teamId, accepted: true, role: MembershipRole.OWNER },
         });
@@ -200,6 +203,53 @@ export class TeamService {
       return transaction.membership.delete({
         where: { id: membership.id },
         select: { id: true },
+      });
+    });
+  }
+
+  async updateMemberRole({
+    actorId,
+    teamId,
+    membershipId,
+    role,
+  }: {
+    actorId: number;
+    teamId: number;
+    membershipId: number;
+    role: MembershipRole;
+  }): Promise<ManagedMembership> {
+    return this.runSerializable(async (transaction) => {
+      const actorRole = await this.assertCanManage(transaction, actorId, teamId);
+      const membership = await transaction.membership.findFirst({
+        where: {
+          id: membershipId,
+          teamId,
+          accepted: true,
+          team: { isOrganization: false, parentId: null },
+        },
+        select: { id: true, role: true },
+      });
+      if (!membership) {
+        throw new ErrorWithCode(ErrorCode.NotFound, "Team membership not found");
+      }
+
+      const changesOwnership = membership.role === MembershipRole.OWNER || role === MembershipRole.OWNER;
+      if (changesOwnership && actorRole !== MembershipRole.OWNER) {
+        throw new ErrorWithCode(ErrorCode.Forbidden, "Only a Team owner can change owner roles");
+      }
+      if (membership.role === MembershipRole.OWNER && role !== MembershipRole.OWNER) {
+        const ownerCount = await transaction.membership.count({
+          where: { teamId, accepted: true, role: MembershipRole.OWNER },
+        });
+        if (ownerCount <= 1) {
+          throw new ErrorWithCode(ErrorCode.Forbidden, "The final Team owner cannot be demoted");
+        }
+      }
+
+      return transaction.membership.update({
+        where: { id: membership.id },
+        data: { role },
+        select: memberSelect,
       });
     });
   }
@@ -225,7 +275,11 @@ export class TeamService {
     throw new ErrorWithCode(ErrorCode.BadRequest, "The Team changed; refresh and try again");
   }
 
-  private async assertCanManage(client: DatabaseClient, userId: number, teamId: number): Promise<void> {
+  private async assertCanManage(
+    client: DatabaseClient,
+    userId: number,
+    teamId: number
+  ): Promise<MembershipRole> {
     const membership = await client.membership.findFirst({
       where: {
         userId,
@@ -234,11 +288,12 @@ export class TeamService {
         role: { in: managementRoles },
         team: { isOrganization: false, parentId: null },
       },
-      select: { id: true },
+      select: { role: true },
     });
     if (!membership) {
       throw new ErrorWithCode(ErrorCode.Forbidden, "Team owner or administrator access is required");
     }
+    return membership.role;
   }
 
   private async ensureRootSlugAvailable(

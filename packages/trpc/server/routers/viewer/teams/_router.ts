@@ -63,4 +63,16 @@ export const teamsRouter = router({
     .mutation(({ ctx, input }) => {
       return new TeamService(ctx.prisma).removeMember({ actorId: ctx.user.id, ...input });
     }),
+
+  updateMemberRole: authedProcedure
+    .input(
+      z.object({
+        teamId: teamIdSchema,
+        membershipId: z.number().int().positive(),
+        role: z.nativeEnum(MembershipRole),
+      })
+    )
+    .mutation(({ ctx, input }) => {
+      return new TeamService(ctx.prisma).updateMemberRole({ actorId: ctx.user.id, ...input });
+    }),
 });

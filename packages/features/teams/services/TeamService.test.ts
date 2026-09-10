@@ -1,5 +1,5 @@
 import { ErrorCode } from "@calcom/lib/errorCodes";
-import type { PrismaClient } from "@calcom/prisma/client";
+import { Prisma, type PrismaClient } from "@calcom/prisma/client";
 import { IdentityProvider, MembershipRole, UserPermissionRole } from "@calcom/prisma/enums";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TeamService } from "./TeamService";
@@ -10,11 +10,13 @@ describe("TeamService", () => {
   const membershipFindUnique = vi.fn();
   const membershipCreate = vi.fn();
   const membershipDelete = vi.fn();
+  const membershipUpdate = vi.fn();
   const membershipCount = vi.fn();
   const teamFindFirst = vi.fn();
   const teamCreate = vi.fn();
   const teamUpdate = vi.fn();
   const userFindFirst = vi.fn();
+  const transaction = vi.fn();
   let prisma: PrismaClient;
   let service: TeamService;
 
@@ -28,12 +30,16 @@ describe("TeamService", () => {
         findUnique: membershipFindUnique,
         create: membershipCreate,
         delete: membershipDelete,
+        update: membershipUpdate,
         count: membershipCount,
       },
       team: { findFirst: teamFindFirst, create: teamCreate, update: teamUpdate },
       user: { findFirst: userFindFirst },
-      $transaction: vi.fn((callback: (transaction: PrismaClient) => Promise<unknown>) => callback(prisma)),
+      $transaction: transaction,
     } as unknown as PrismaClient;
+    transaction.mockImplementation((callback: (transaction: PrismaClient) => Promise<unknown>) =>
+      callback(prisma)
+    );
     service = new TeamService(prisma);
   });
 
@@ -116,7 +122,7 @@ describe("TeamService", () => {
   });
 
   it("never removes the final accepted owner", async () => {
-    membershipFindFirst.mockResolvedValueOnce({ id: 1 }).mockResolvedValueOnce({
+    membershipFindFirst.mockResolvedValueOnce({ role: MembershipRole.OWNER }).mockResolvedValueOnce({
       id: 2,
       accepted: true,
       role: MembershipRole.OWNER,
@@ -130,7 +136,7 @@ describe("TeamService", () => {
   });
 
   it("removes a membership when an accepted owner remains", async () => {
-    membershipFindFirst.mockResolvedValueOnce({ id: 1 }).mockResolvedValueOnce({
+    membershipFindFirst.mockResolvedValueOnce({ role: MembershipRole.OWNER }).mockResolvedValueOnce({
       id: 2,
       accepted: true,
       role: MembershipRole.OWNER,
@@ -142,5 +148,74 @@ describe("TeamService", () => {
       id: 2,
     });
     expect(membershipDelete).toHaveBeenCalledWith({ where: { id: 2 }, select: { id: true } });
+  });
+
+  it("allows an owner to transfer ownership before being demoted", async () => {
+    membershipFindFirst
+      .mockResolvedValueOnce({ role: MembershipRole.OWNER })
+      .mockResolvedValueOnce({ id: 2, role: MembershipRole.ADMIN });
+    membershipUpdate.mockResolvedValue({ id: 2, role: MembershipRole.OWNER });
+
+    await service.updateMemberRole({
+      actorId: 7,
+      teamId: 42,
+      membershipId: 2,
+      role: MembershipRole.OWNER,
+    });
+
+    expect(membershipUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 2 }, data: { role: MembershipRole.OWNER } })
+    );
+  });
+
+  it("prevents an administrator from changing owner roles", async () => {
+    membershipFindFirst
+      .mockResolvedValueOnce({ role: MembershipRole.ADMIN })
+      .mockResolvedValueOnce({ id: 2, role: MembershipRole.MEMBER });
+
+    await expect(
+      service.updateMemberRole({
+        actorId: 7,
+        teamId: 42,
+        membershipId: 2,
+        role: MembershipRole.OWNER,
+      })
+    ).rejects.toMatchObject({ code: ErrorCode.Forbidden });
+    expect(membershipUpdate).not.toHaveBeenCalled();
+  });
+
+  it("prevents the final owner from being demoted", async () => {
+    membershipFindFirst
+      .mockResolvedValueOnce({ role: MembershipRole.OWNER })
+      .mockResolvedValueOnce({ id: 2, role: MembershipRole.OWNER });
+    membershipCount.mockResolvedValue(1);
+
+    await expect(
+      service.updateMemberRole({
+        actorId: 7,
+        teamId: 42,
+        membershipId: 2,
+        role: MembershipRole.ADMIN,
+      })
+    ).rejects.toMatchObject({ code: ErrorCode.Forbidden });
+    expect(membershipUpdate).not.toHaveBeenCalled();
+  });
+
+  it("retries one serialization conflict", async () => {
+    transaction
+      .mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError("Serialization conflict", {
+          code: "P2034",
+          clientVersion: "test",
+        })
+      )
+      .mockImplementationOnce((callback: (transaction: PrismaClient) => Promise<unknown>) => callback(prisma));
+    teamFindFirst.mockResolvedValue(null);
+    teamCreate.mockResolvedValue({ id: 42 });
+
+    await expect(
+      service.create({ actor: { id: 7, role: UserPermissionRole.ADMIN }, name: "HR", slug: "hr" })
+    ).resolves.toEqual({ id: 42 });
+    expect(transaction).toHaveBeenCalledTimes(2);
   });
 });
