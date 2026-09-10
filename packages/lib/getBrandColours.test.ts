@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-
-import { createColorMap } from "./getBrandColours";
+import { createColorMap, fallBackHex } from "./getBrandColours";
 
 describe("useGetBrandingColours", () => {
   it("should return the correct color values for given lightVal and darkVal", () => {
@@ -37,5 +36,10 @@ describe("useGetBrandingColours", () => {
 
     expect(lightMap).toEqual(expectedResult.light);
     expect(darkMap).toEqual(expectedResult.dark);
+  });
+
+  it("uses the Nuen colors when an event has no custom brand colors", () => {
+    expect(fallBackHex(null, false)).toBe("#071b33");
+    expect(fallBackHex(null, true)).toBe("#f8f9fa");
   });
 });

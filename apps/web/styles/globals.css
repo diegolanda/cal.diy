@@ -4,6 +4,43 @@
 @import "../../../packages/coss-ui/src/styles/globals.css";
 @import "./raqb.css";
 
+:root {
+  --nuen-night: #020817;
+  --nuen-primary: #071b33;
+  --nuen-navy: #0b2442;
+  --nuen-ink: #191c1d;
+  --nuen-paper: #f8f9fa;
+  --nuen-surface: #ffffff;
+  --nuen-border: #c5c5d6;
+  --nuen-muted: #454654;
+
+  --cal-bg: var(--nuen-surface);
+  --cal-bg-subtle: var(--nuen-paper);
+  --cal-bg-muted: var(--nuen-paper);
+  --cal-bg-primary: var(--nuen-primary);
+  --cal-bg-primary-emphasis: var(--nuen-navy);
+  --cal-border: var(--nuen-border);
+  --cal-text-emphasis: var(--nuen-ink);
+  --cal-text: var(--nuen-muted);
+  --cal-brand: var(--nuen-primary);
+  --cal-brand-emphasis: var(--nuen-navy);
+}
+
+.dark {
+  --cal-bg: var(--nuen-primary);
+  --cal-bg-subtle: var(--nuen-night);
+  --cal-bg-muted: var(--nuen-navy);
+  --cal-bg-emphasis: var(--nuen-navy);
+  --cal-bg-primary: var(--nuen-paper);
+  --cal-bg-primary-emphasis: var(--nuen-border);
+  --cal-border: rgb(255 255 255 / 14%);
+  --cal-border-subtle: rgb(255 255 255 / 10%);
+  --cal-text-emphasis: var(--nuen-paper);
+  --cal-text: var(--nuen-border);
+  --cal-brand: var(--nuen-paper);
+  --cal-brand-emphasis: var(--nuen-border);
+}
+
 ::-moz-selection {
   color: var(--cal-brand-text);
   background: var(--cal-brand);
