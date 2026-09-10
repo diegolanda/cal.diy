@@ -4,7 +4,7 @@ import { getBookingForReschedule, getBookingForSeatedEvent } from "@calcom/featu
 import { getUsernameList } from "@calcom/features/eventtypes/lib/defaultEvents";
 import type { getPublicEvent } from "@calcom/features/eventtypes/lib/getPublicEvent";
 import { EventRepository } from "@calcom/features/eventtypes/repositories/EventRepository";
-import { shouldHideBrandingForUserEvent } from "@calcom/features/profile/lib/hideBranding";
+import { getHideBranding, shouldHideBrandingForUserEvent } from "@calcom/features/profile/lib/hideBranding";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import slugify from "@calcom/lib/slugify";
 import { prisma } from "@calcom/prisma";
@@ -22,10 +22,12 @@ type Props = {
   bookingUid: string | null;
   user: string;
   slug: string;
+  routePrefix: string;
   isBrandingHidden: boolean;
   isSEOIndexable: boolean | null;
   themeBasis: null | string;
   orgBannerUrl: null;
+  isTeamEvent?: boolean;
 };
 
 async function processReschedule({
@@ -82,7 +84,7 @@ async function processReschedule({
   return {
     redirect: {
       permanent: false,
-      destination: redirectEventTypeTarget.slug,
+      destination: `${props.routePrefix}/${redirectEventTypeTarget.slug}`,
     },
   };
 }
@@ -102,7 +104,7 @@ async function processSeatedEvent({
     return {
       redirect: {
         permanent: false,
-        destination: `${props.slug}`,
+        destination: `${props.routePrefix}/${props.slug}`,
       },
     };
   } else {
@@ -175,6 +177,7 @@ async function getDynamicGroupPageProps(context: GetServerSidePropsContext) {
     },
     user: usernames.join("+"),
     slug,
+    routePrefix: `/${usernames.join("+")}`,
     isBrandingHidden: false,
     isSEOIndexable: true,
     themeBasis: null,
@@ -268,6 +271,7 @@ async function getUserPageProps(context: GetServerSidePropsContext) {
     eventData: eventData,
     user: username,
     slug,
+    routePrefix: `/${username}`,
     isBrandingHidden: shouldHideBrandingForUserEvent({
       eventTypeId: eventData.id,
       owner: user,
@@ -308,6 +312,87 @@ const paramsSchema = z.object({
   type: z.string().transform((s) => slugify(s)),
   user: z.string().transform((s) => getUsernameList(s)),
 });
+
+const teamParamsSchema = z.object({
+  team: z.string().transform((s) => slugify(s)),
+  type: z.string().transform((s) => slugify(s)),
+});
+
+export const getTeamServerSideProps = async (context: GetServerSidePropsContext) => {
+  const session = await getServerSession({ req: context.req });
+  const { team, type: slug } = teamParamsSchema.parse(context.params);
+  const { rescheduleUid, bookingUid } = context.query;
+  const allowRescheduleForCancelledBooking = context.query.allowRescheduleForCancelledBooking === "true";
+
+  const rootTeams = await prisma.team.findMany({
+    where: {
+      slug: team,
+      isOrganization: false,
+      parentId: null,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!rootTeams.length) {
+    return {
+      notFound: true,
+    } as const;
+  }
+
+  const eventData = await EventRepository.getPublicEvent(
+    {
+      username: team,
+      eventSlug: slug,
+      isTeamEvent: true,
+      org: null,
+      fromRedirectOfNonOrgLink: false,
+    },
+    session?.user?.id
+  );
+
+  if (!eventData?.teamId || !rootTeams.some(({ id }) => id === eventData.teamId)) {
+    return {
+      notFound: true,
+    } as const;
+  }
+
+  const props: Props = {
+    eventData,
+    user: team,
+    slug,
+    routePrefix: `/team/${team}`,
+    isBrandingHidden: await getHideBranding({ teamId: eventData.teamId }),
+    isSEOIndexable: true,
+    themeBasis: team,
+    bookingUid: bookingUid ? `${bookingUid}` : null,
+    rescheduleUid: null,
+    orgBannerUrl: null,
+    isTeamEvent: true,
+  };
+
+  if (rescheduleUid) {
+    const processRescheduleResult = await processReschedule({
+      props,
+      rescheduleUid,
+      session,
+      allowRescheduleForCancelledBooking,
+    });
+    if (processRescheduleResult) return processRescheduleResult;
+  } else if (bookingUid) {
+    const processSeatResult = await processSeatedEvent({
+      props,
+      bookingUid,
+      allowRescheduleForCancelledBooking,
+    });
+    if (processSeatResult) return processSeatResult;
+  }
+
+  return {
+    props,
+  };
+};
 
 // Booker page fetches a tiny bit of data server side, to determine early
 // whether the page should show an away state or dynamic booking not allowed.
