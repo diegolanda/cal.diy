@@ -1,3 +1,4 @@
+import process from "node:process";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import CreateEventTypeForm from "@calcom/features/eventtypes/components/CreateEventTypeForm";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -5,14 +6,13 @@ import { useTypedQuery } from "@calcom/lib/hooks/useTypedQuery";
 import type { EventType } from "@calcom/prisma/client";
 import type { MembershipRole } from "@calcom/prisma/enums";
 import { SchedulingType } from "@calcom/prisma/enums";
-import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import { DialogClose, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
 import { showToast } from "@calcom/ui/components/toast";
+import { useCreateEventType } from "@calcom/web/modules/event-types/hooks/useCreateEventType";
 import { isValidPhoneNumber } from "libphonenumber-js/max";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { useCreateEventType } from "~/event-types/hooks/useCreateEventType";
 
 const WEBSITE_URL = process.env.NEXT_PUBLIC_WEBSITE_URL ?? "";
 
@@ -66,7 +66,6 @@ const querySchema = z.object({
 export function CreateEventTypeDialog({ profileOptions }: { profileOptions: ProfileOption[] }) {
   const { t } = useLocale();
   const router = useRouter();
-  const orgBranding = null;
 
   const {
     data: { teamId, eventPage: pageSlug },
@@ -77,7 +76,7 @@ export function CreateEventTypeDialog({ profileOptions }: { profileOptions: Prof
   const permissions = teamProfile?.permissions ?? { canCreateEventType: false };
 
   const onSuccessMutation = (eventType: EventType) => {
-    router.replace(`/event-types/${eventType.id}${teamId ? "?tabName=team" : ""}`);
+    router.replace(`/event-types/${eventType.id}${eventType.teamId ? "?tabName=team" : ""}`);
     showToast(
       t("event_type_created_successfully", {
         eventTypeTitle: eventType.title,
@@ -104,6 +103,45 @@ export function CreateEventTypeDialog({ profileOptions }: { profileOptions: Prof
   const { form, createMutation, isManagedEventType } = useCreateEventType(onSuccessMutation, onErrorMutation);
 
   const urlPrefix = WEBSITE_URL;
+  let dialogTitle = t("add_new_event_type");
+  let eventTypeForm = (
+    <CreateEventTypeForm
+      urlPrefix={urlPrefix}
+      isPending={createMutation.isPending}
+      form={form}
+      isManagedEventType={isManagedEventType}
+      handleSubmit={(values) => {
+        createMutation.mutate(values);
+      }}
+      SubmitButton={SubmitButton}
+      pageSlug={pageSlug}
+    />
+  );
+
+  if (teamId) {
+    dialogTitle = t("add_new_team_event_type");
+    eventTypeForm = <p className="text-sm text-subtle">{t("error_event_type_unauthorized_create")}</p>;
+
+    if (teamProfile?.slug && permissions.canCreateEventType) {
+      eventTypeForm = (
+        <CreateEventTypeForm
+          urlPrefix={urlPrefix}
+          isPending={createMutation.isPending}
+          form={form}
+          isManagedEventType={isManagedEventType}
+          handleSubmit={(values) => {
+            createMutation.mutate({
+              ...values,
+              teamId,
+              schedulingType: SchedulingType.ROUND_ROBIN,
+            });
+          }}
+          SubmitButton={SubmitButton}
+          pageSlug={`team/${teamProfile.slug}`}
+        />
+      );
+    }
+  }
 
   return (
     <Dialog
@@ -112,21 +150,9 @@ export function CreateEventTypeDialog({ profileOptions }: { profileOptions: Prof
       <DialogContent
         type="creation"
         enableOverflow
-        title={teamId ? t("add_new_team_event_type") : t("add_new_event_type")}
+        title={dialogTitle}
         description={t("new_event_type_to_book_description")}>
-        {teamId ? null : (
-          <CreateEventTypeForm
-            urlPrefix={urlPrefix}
-            isPending={createMutation.isPending}
-            form={form}
-            isManagedEventType={isManagedEventType}
-            handleSubmit={(values) => {
-              createMutation.mutate(values);
-            }}
-            SubmitButton={SubmitButton}
-            pageSlug={pageSlug}
-          />
-        )}
+        {eventTypeForm}
       </DialogContent>
     </Dialog>
   );
