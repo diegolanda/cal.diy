@@ -1,4 +1,8 @@
 import type { EventTypeRepository } from "@calcom/features/eventtypes/repositories/eventTypeRepository";
+import {
+  type TeamPermission,
+  TeamPermissionService,
+} from "@calcom/features/membership/services/TeamPermissionService";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import { markdownToSafeHTML } from "@calcom/lib/markdownToSafeHTML";
 import prisma from "@calcom/prisma";
@@ -10,14 +14,6 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import authedProcedure from "../../../procedures/authedProcedure";
 import type { TUpdateInputSchema } from "./types";
-
-type PermissionString = string;
-class PermissionCheckService {
-  constructor(_prisma?: unknown) {}
-  async checkPermission(..._args: unknown[]) { return true; }
-  async hasPermission(..._args: unknown[]) { return true; }
-  async getTeamIdsWithPermission(..._args: unknown[]): Promise<number[]> { return []; }
-}
 
 type EventType = Awaited<ReturnType<EventTypeRepository["findAllByUpId"]>>[number];
 
@@ -48,6 +44,9 @@ export const eventOwnerProcedure = authedProcedure
         team: {
           select: {
             members: {
+              where: {
+                accepted: true,
+              },
               select: {
                 userId: true,
                 role: true,
@@ -101,7 +100,7 @@ export const eventOwnerProcedure = authedProcedure
  * @returns A procedure that checks the specified permission
  */
 export const createEventPbacProcedure = (
-  permission: PermissionString,
+  permission: TeamPermission,
   fallbackRoles: MembershipRole[] = ["ADMIN", "OWNER"]
 ) => {
   return authedProcedure
@@ -134,6 +133,9 @@ export const createEventPbacProcedure = (
           team: {
             select: {
               members: {
+                where: {
+                  accepted: true,
+                },
                 select: {
                   userId: true,
                 },
@@ -158,7 +160,7 @@ export const createEventPbacProcedure = (
         }
       } else {
         // Team event - check PBAC/fallback permissions
-        const permissionCheckService = new PermissionCheckService();
+        const permissionCheckService = new TeamPermissionService(ctx.prisma);
         const hasPermission = await permissionCheckService.checkPermission({
           userId: ctx.user.id,
           teamId: event.teamId,

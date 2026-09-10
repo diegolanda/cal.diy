@@ -10,6 +10,9 @@ describe("createEventPbacProcedure", () => {
     eventType: {
       findUnique: vi.fn(),
     },
+    membership: {
+      findFirst: vi.fn(),
+    },
   } as unknown as PrismaClient;
 
   const mockCtx = {
@@ -28,6 +31,7 @@ describe("createEventPbacProcedure", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPrisma.membership.findFirst = vi.fn().mockResolvedValue({ id: 1 });
   });
 
   describe("personal events", () => {
@@ -196,13 +200,13 @@ describe("createEventPbacProcedure", () => {
       ).resolves.not.toThrow();
     });
 
-    it("should allow org admin without team membership to access team event", async () => {
+    it("should deny access without explicit Team membership", async () => {
       mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue(teamEvent);
+      mockPrisma.membership.findFirst = vi.fn().mockResolvedValue(null);
 
       const procedure = createEventPbacProcedure("eventType.update");
       const middleware = getMiddleware(procedure);
 
-      // PermissionCheckService stub always returns true, so org admin access is always granted
       await expect(
         middleware({
           ctx: mockCtx,
@@ -213,7 +217,7 @@ describe("createEventPbacProcedure", () => {
           getRawInput: async () => ({}),
           meta: undefined,
         })
-      ).resolves.not.toThrow();
+      ).rejects.toThrow(TRPCError);
     });
   });
 
@@ -419,7 +423,6 @@ describe("createEventPbacProcedure", () => {
       const procedure = createEventPbacProcedure("eventType.delete");
       const middleware = getMiddleware(procedure);
 
-      // PermissionCheckService stub always returns true
       await expect(
         middleware({
           ctx: mockCtx,
@@ -439,7 +442,6 @@ describe("createEventPbacProcedure", () => {
       const procedure = createEventPbacProcedure("eventType.create", [MembershipRole.OWNER]);
       const middleware = getMiddleware(procedure);
 
-      // PermissionCheckService stub always returns true
       await expect(
         middleware({
           ctx: mockCtx,

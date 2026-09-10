@@ -1,37 +1,33 @@
+import { TeamPermissionService } from "@calcom/features/membership/services/TeamPermissionService";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import type { PrismaClient } from "@calcom/prisma";
 import { MembershipRole } from "@calcom/prisma/enums";
 import { BookingRepository } from "../repositories/BookingRepository";
 
-class PermissionCheckService {
-  constructor(_prisma?: unknown) {}
-  async checkPermission(..._args: unknown[]) { return true; }
-  async hasPermission(..._args: unknown[]) { return true; }
-  async getTeamIdsWithPermission(..._args: unknown[]): Promise<number[]> { return []; }
-}
-
 type BookingForAccessCheck = NonNullable<Awaited<ReturnType<BookingRepository["findByUidIncludeEventType"]>>>;
 
 export class BookingAccessService {
-  private permissionCheckService: PermissionCheckService;
+  private permissionCheckService: TeamPermissionService;
 
   constructor(private prismaClient: PrismaClient) {
-    this.permissionCheckService = new PermissionCheckService();
+    this.permissionCheckService = new TeamPermissionService(prismaClient);
   }
 
   private isUserAHost(userId: number, booking: BookingForAccessCheck): boolean {
     const hostMap = new Map<number, { id: number; email: string }>();
 
-    const addHost = (id: number, email: string) => {
+    const addHost = (id: number, email: string): void => {
       if (!hostMap.has(id)) {
         hostMap.set(id, { id, email });
       }
     };
 
-    booking?.eventType?.hosts?.forEach((host: { userId: number; user: { email: string } }) =>
-      addHost(host.userId, host.user.email)
-    );
-    booking?.eventType?.users?.forEach((user: { id: number; email: string }) => addHost(user.id, user.email));
+    booking?.eventType?.hosts?.forEach((host: { userId: number; user: { email: string } }) => {
+      addHost(host.userId, host.user.email);
+    });
+    booking?.eventType?.users?.forEach((user: { id: number; email: string }) => {
+      addHost(user.id, user.email);
+    });
 
     if (booking?.user?.id && booking?.user?.email) {
       addHost(booking.user.id, booking.user.email);
@@ -49,9 +45,9 @@ export class BookingAccessService {
    * Determines if a user has access to a booking based on:
    * 1. Being the booking organizer
    * 2. Being one of the hosts in a multi-host booking
-   * 3. Being a team/org admin where the event type belongs (uses PBAC if enabled)
-   * 4. Being an org admin where the booking organizer belongs (uses PBAC if enabled, for personal bookings)
-   * 5. Being a team admin of any team the booking organizer belongs to (uses PBAC if enabled, for personal bookings)
+   * 3. Being a team owner/admin where the event type belongs
+   * 4. Being a team owner/admin where a managed event's parent belongs
+   * 5. Being a team owner/admin of a team the booking organizer belongs to
    */
   async doesUserIdHaveAccessToBooking({
     userId,
@@ -95,11 +91,12 @@ export class BookingAccessService {
 
     // For managed events (child event types), check the parent's teamId
     if (booking.eventType?.parent?.teamId) {
-      const isAdminOrUser = await userRepo.isAdminOfTeamOrParentOrg({
+      return this.permissionCheckService.checkPermission({
         userId,
         teamId: booking.eventType.parent.teamId,
+        permission: "booking.readTeamBookings",
+        fallbackRoles: [MembershipRole.OWNER, MembershipRole.ADMIN],
       });
-      return isAdminOrUser;
     }
 
     if (!booking.userId) return false;
