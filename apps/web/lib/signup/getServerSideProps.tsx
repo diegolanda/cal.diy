@@ -1,5 +1,6 @@
 import process from "node:process";
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { getGoogleWorkspaceAuthConfig } from "@calcom/features/auth/lib/googleWorkspaceAuth";
 import { getOrgUsernameFromEmail } from "@calcom/features/auth/signup/utils/getOrgUsernameFromEmail";
 import { FeaturesRepository } from "@calcom/features/flags/features.repository";
 import { IS_SELF_HOSTED, WEBAPP_URL } from "@calcom/lib/constants";
@@ -62,7 +63,11 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
     onboardingV3Enabled,
   };
 
-  if ((process.env.NEXT_PUBLIC_DISABLE_SIGNUP === "true" && !token) || signupDisabled) {
+  if (
+    getGoogleWorkspaceAuthConfig().enabled ||
+    (process.env.NEXT_PUBLIC_DISABLE_SIGNUP === "true" && !token) ||
+    signupDisabled
+  ) {
     return {
       redirect: {
         permanent: false,

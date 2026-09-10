@@ -1,5 +1,6 @@
 import process from "node:process";
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { getGoogleWorkspaceAuthConfig } from "@calcom/features/auth/lib/googleWorkspaceAuth";
 import { WEBSITE_URL } from "@calcom/lib/constants";
 import { getSafeRedirectUrl } from "@calcom/lib/getSafeRedirectUrl";
 import prisma from "@calcom/prisma";
@@ -10,6 +11,7 @@ import { getCsrfToken } from "next-auth/react";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const { req, query } = context;
+  const googleWorkspaceAuthEnabled = getGoogleWorkspaceAuthConfig().enabled;
 
   const session = await getServerSession({ req });
 
@@ -75,7 +77,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   }
 
   const userExists = await prisma.user.findFirst({ select: { id: true } });
-  if (!userExists) {
+  if (!userExists && !googleWorkspaceAuthEnabled) {
     // Proceed to new onboarding to create first admin user
     return {
       redirect: {
@@ -88,6 +90,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     props: {
       csrfToken: await getCsrfToken(context),
       isGoogleLoginEnabled: IS_GOOGLE_LOGIN_ENABLED,
+      googleWorkspaceAuthEnabled,
       isOutlookLoginEnabled: false,
       totpEmail,
     },

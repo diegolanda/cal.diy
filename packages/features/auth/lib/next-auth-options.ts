@@ -2,6 +2,12 @@ import process from "node:process";
 import { updateProfilePhotoGoogle } from "@calcom/app-store/_utils/oauth/updateProfilePhotoGoogle";
 import { updateProfilePhotoMicrosoft } from "@calcom/app-store/_utils/oauth/updateProfilePhotoMicrosoft";
 import { createGoogleCalendarServiceWithGoogleType } from "@calcom/app-store/googlecalendar/lib/CalendarService";
+import {
+  getGoogleWorkspaceAuthConfig,
+  isGoogleWorkspaceAdminEmail,
+  isGoogleWorkspaceAuthProviderAllowed,
+  isGoogleWorkspaceSignInAllowed,
+} from "@calcom/features/auth/lib/googleWorkspaceAuth";
 import { getIdentityProvider } from "@calcom/features/auth/lib/identityProviders";
 import {
   OUTLOOK_CLIENT_ID,
@@ -61,6 +67,7 @@ type UserWithProfiles = NonNullable<
 
 interface ExtendedOAuthProfile extends Profile {
   email_verified?: boolean; // Google/OIDC standard
+  hd?: string; // Google Workspace hosted domain
   xms_edov?: boolean | string | number; // Azure AD specific
 }
 
@@ -300,7 +307,21 @@ export const CalComCredentialsProvider = CredentialsProvider({
   authorize: authorizeCredentials,
 });
 
-const providers: Provider[] = [CalComCredentialsProvider];
+const googleWorkspaceAuthConfig = getGoogleWorkspaceAuthConfig();
+if (googleWorkspaceAuthConfig.enabled && googleWorkspaceAuthConfig.adminEmails.length === 0) {
+  throw new Error("GOOGLE_WORKSPACE_ADMIN_EMAILS must include an administrator on the allowed domain");
+}
+if (googleWorkspaceAuthConfig.enabled && !IS_GOOGLE_LOGIN_ENABLED) {
+  throw new Error("Restricted Google Workspace auth requires enabled Google OAuth credentials");
+}
+// Workspace owns the second factor because restricted users do not have password credentials.
+const shouldUseApplicationTwoFactor = (enabled: boolean): boolean =>
+  enabled && !googleWorkspaceAuthConfig.enabled;
+const providers: Provider[] = [];
+
+if (isGoogleWorkspaceAuthProviderAllowed("credentials")) {
+  providers.push(CalComCredentialsProvider);
+}
 type SamlIdpUser = {
   id: number;
   userId: number;
@@ -330,7 +351,12 @@ if (IS_GOOGLE_LOGIN_ENABLED) {
   );
 }
 
-if (OUTLOOK_LOGIN_ENABLED && OUTLOOK_CLIENT_ID && OUTLOOK_CLIENT_SECRET) {
+if (
+  isGoogleWorkspaceAuthProviderAllowed("azure-ad") &&
+  OUTLOOK_LOGIN_ENABLED &&
+  OUTLOOK_CLIENT_ID &&
+  OUTLOOK_CLIENT_SECRET
+) {
   providers.push(
     AzureADProvider({
       clientId: OUTLOOK_CLIENT_ID,
@@ -356,14 +382,16 @@ if (OUTLOOK_LOGIN_ENABLED && OUTLOOK_CLIENT_ID && OUTLOOK_CLIENT_SECRET) {
   );
 }
 
-providers.push(
-  EmailProvider({
-    type: "email",
-    maxAge: 10 * 60 * 60, // Magic links are valid for 10 min only
-    // Here we setup the sendVerificationRequest that calls the email template with the identifier (email) and token to verify.
-    sendVerificationRequest: async (props) => (await import("./sendVerificationRequest")).default(props),
-  })
-);
+if (isGoogleWorkspaceAuthProviderAllowed("email")) {
+  providers.push(
+    EmailProvider({
+      type: "email",
+      maxAge: 10 * 60 * 60, // Magic links are valid for 10 min only
+      // Here we setup the sendVerificationRequest that calls the email template with the identifier (email) and token to verify.
+      sendVerificationRequest: async (props) => (await import("./sendVerificationRequest")).default(props),
+    })
+  );
+}
 
 function isNumber(n: string) {
   return !Number.isNaN(parseFloat(n)) && !Number.isNaN(+n);
@@ -800,6 +828,25 @@ export const getOptions = ({
 
       log.debug("callbacks:signin", safeStringify(params));
 
+      const googleWorkspaceProfile = profile as ExtendedOAuthProfile | undefined;
+      const googleWorkspaceEmail = googleWorkspaceProfile?.email;
+      const googleWorkspaceEmailVerified = googleWorkspaceProfile?.email_verified;
+      if (
+        !isGoogleWorkspaceSignInAllowed({
+          provider: account?.provider,
+          email: googleWorkspaceEmail,
+          emailVerified: googleWorkspaceEmailVerified === true,
+          hostedDomain: googleWorkspaceProfile?.hd,
+        })
+      ) {
+        log.warn("callbacks:signIn - Google Workspace access denied", {
+          allowedDomain: googleWorkspaceAuthConfig.domain,
+          emailDomain: googleWorkspaceEmail?.split("@")[1],
+          provider: account?.provider,
+        });
+        return "/auth/error?error=google-workspace-access-denied";
+      }
+
       if (account?.provider === "email") {
         return true;
       }
@@ -941,7 +988,7 @@ export const getOptions = ({
                 log.error("Error while linking account of already existing user", safeStringify(error));
               }
             }
-            if (existingUser.twoFactorEnabled && existingUser.identityProvider === idP) {
+            if (shouldUseApplicationTwoFactor(existingUser.twoFactorEnabled) && existingUser.identityProvider === idP) {
               return loginWithTotp(existingUser.email);
             } else {
               return true;
@@ -957,7 +1004,7 @@ export const getOptions = ({
 
           if (!userWithNewEmail) {
             await prisma.user.update({ where: { id: existingUser.id }, data: { email: user.email } });
-            if (existingUser.twoFactorEnabled) {
+            if (shouldUseApplicationTwoFactor(existingUser.twoFactorEnabled)) {
               return loginWithTotp(existingUser.email);
             } else {
               return true;
@@ -990,7 +1037,7 @@ export const getOptions = ({
         if (existingUserWithEmail) {
           // if self-hosted then we can allow auto-merge of identity providers if email is verified
           if (isVerified && existingUserWithEmail.identityProvider !== IdentityProvider.CAL) {
-            if (existingUserWithEmail.twoFactorEnabled) {
+            if (shouldUseApplicationTwoFactor(existingUserWithEmail.twoFactorEnabled)) {
               return loginWithTotp(existingUserWithEmail.email);
             } else {
               return true;
@@ -1017,10 +1064,11 @@ export const getOptions = ({
                 name: user.name,
                 identityProvider: idP,
                 identityProviderId: account.providerAccountId,
+                ...(isGoogleWorkspaceAdminEmail(user.email) && { role: UserPermissionRole.ADMIN }),
               },
             });
 
-            if (existingUserWithEmail.twoFactorEnabled) {
+            if (shouldUseApplicationTwoFactor(existingUserWithEmail.twoFactorEnabled)) {
               return loginWithTotp(existingUserWithEmail.email);
             } else {
               return true;
@@ -1048,7 +1096,7 @@ export const getOptions = ({
               },
             });
 
-            if (existingUserWithEmail.twoFactorEnabled) {
+            if (shouldUseApplicationTwoFactor(existingUserWithEmail.twoFactorEnabled)) {
               return loginWithTotp(existingUserWithEmail.email);
             } else {
               return true;
@@ -1069,7 +1117,7 @@ export const getOptions = ({
               },
             });
 
-            if (existingUserWithEmail.twoFactorEnabled) {
+            if (shouldUseApplicationTwoFactor(existingUserWithEmail.twoFactorEnabled)) {
               return loginWithTotp(existingUserWithEmail.email);
             } else {
               return true;
@@ -1087,7 +1135,7 @@ export const getOptions = ({
               },
             });
 
-            if (existingUserWithEmail.twoFactorEnabled) {
+            if (shouldUseApplicationTwoFactor(existingUserWithEmail.twoFactorEnabled)) {
               return loginWithTotp(existingUserWithEmail.email);
             } else {
               return true;
@@ -1120,6 +1168,7 @@ export const getOptions = ({
               email: user.email,
               identityProvider: idP,
               identityProviderId: account.providerAccountId,
+              ...(isGoogleWorkspaceAdminEmail(user.email) && { role: UserPermissionRole.ADMIN }),
               ...(orgId && {
                 verified: true,
                 organization: { connect: { id: orgId } },
@@ -1142,7 +1191,7 @@ export const getOptions = ({
             await updateProfilePhotoMicrosoft(account.access_token, newUser.id);
           }
 
-          if (newUser.twoFactorEnabled) {
+          if (shouldUseApplicationTwoFactor(newUser.twoFactorEnabled)) {
             return loginWithTotp(newUser.email);
           } else {
             return true;

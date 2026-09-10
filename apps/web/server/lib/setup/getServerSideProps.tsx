@@ -1,11 +1,21 @@
 import process from "node:process";
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { getGoogleWorkspaceAuthConfig } from "@calcom/features/auth/lib/googleWorkspaceAuth";
 import prisma from "@calcom/prisma";
 import { UserPermissionRole } from "@calcom/prisma/enums";
 import type { GetServerSidePropsContext } from "next";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const { req } = context;
+
+  if (getGoogleWorkspaceAuthConfig().enabled) {
+    return {
+      redirect: {
+        destination: "/auth/login",
+        permanent: false,
+      },
+    } as const;
+  }
 
   const userCount = await prisma.user.count();
 

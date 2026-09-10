@@ -1,7 +1,8 @@
 "use client";
 
+import process from "node:process";
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
-import { HOSTED_CAL_FEATURES, WEBAPP_URL, WEBSITE_URL } from "@calcom/lib/constants";
+import { APP_NAME, HOSTED_CAL_FEATURES, WEBAPP_URL, WEBSITE_URL } from "@calcom/lib/constants";
 import { emailRegex } from "@calcom/lib/emailSchema";
 import { getSafeRedirectUrl } from "@calcom/lib/getSafeRedirectUrl";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
@@ -36,13 +37,9 @@ interface LoginValues {
   csrfToken: string;
 }
 
-const MicrosoftIcon = () => (
-  <img className="size-4" src="/microsoft-logo.svg" alt="" />
-);
+const MicrosoftIcon = () => <img className="size-4" src="/microsoft-logo.svg" alt="" />;
 
-const GoogleIcon = () => (
-  <img className="size-4" src="/google-icon-colored.svg" alt="" />
-);
+const GoogleIcon = () => <img className="size-4" src="/google-icon-colored.svg" alt="" />;
 
 function BackgroundGrid() {
   const rows = 9;
@@ -103,6 +100,7 @@ function BackgroundGrid() {
 export type PageProps = inferSSRProps<typeof getServerSideProps>;
 export default function Login({
   csrfToken,
+  googleWorkspaceAuthEnabled,
   isGoogleLoginEnabled,
   isOutlookLoginEnabled,
   totpEmail,
@@ -172,7 +170,9 @@ export default function Login({
 
   const showSocialLogin = isGoogleLoginEnabled || isOutlookLoginEnabled;
   const showSignupLink =
-    process.env.NEXT_PUBLIC_DISABLE_SIGNUP !== "true" && searchParams?.get("register") !== "false";
+    !googleWorkspaceAuthEnabled &&
+    process.env.NEXT_PUBLIC_DISABLE_SIGNUP !== "true" &&
+    searchParams?.get("register") !== "false";
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-default/80 px-4 py-10">
@@ -183,7 +183,7 @@ export default function Login({
         <div className="w-full rounded-xl border border-subtle bg-default p-10 shadow-sm">
           {/* Logo */}
           <div className="mb-2 text-center">
-            <h1 className="font-cal text-xl font-bold text-emphasis">Cal.diy</h1>
+            <h1 className="font-cal text-xl font-bold text-emphasis">{APP_NAME}</h1>
           </div>
 
           {/* Heading */}
@@ -233,15 +233,21 @@ export default function Login({
                 </div>
 
                 {/* Divider */}
-                <div className="my-6 flex items-center gap-4">
-                  <Separator className="flex-1" />
-                  <span className="text-sm text-zinc-400">{t("or").toLowerCase()}</span>
-                  <Separator className="flex-1" />
-                </div>
+                {!googleWorkspaceAuthEnabled && (
+                  <div className="my-6 flex items-center gap-4">
+                    <Separator className="flex-1" />
+                    <span className="text-sm text-zinc-400">{t("or").toLowerCase()}</span>
+                    <Separator className="flex-1" />
+                  </div>
+                )}
               </>
             )}
 
-            <form onSubmit={methods.handleSubmit(onSubmit)} noValidate data-testid="login-form">
+            <form
+              onSubmit={methods.handleSubmit(onSubmit)}
+              noValidate
+              data-testid="login-form"
+              hidden={googleWorkspaceAuthEnabled && !twoFactorRequired}>
               <input defaultValue={csrfToken || undefined} type="hidden" hidden {...register("csrfToken")} />
 
               {!twoFactorRequired && (
