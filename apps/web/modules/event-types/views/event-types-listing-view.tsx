@@ -47,6 +47,12 @@ import {
 } from "@calcom/web/modules/event-types/components/CreateEventTypeDialog";
 import { DuplicateDialog } from "@calcom/web/modules/event-types/components/DuplicateDialog";
 import { InfiniteSkeletonLoader } from "@calcom/web/modules/event-types/components/SkeletonLoader";
+import {
+  getEventTypeVisibilityActionKey,
+  getEventTypeVisibilityDescriptionKey,
+  getEventTypeVisibilityStatusKey,
+  isArchivedTeamEventType,
+} from "@calcom/web/modules/event-types/lib/eventTypeVisibility";
 import { SearchIcon } from "@coss/ui/icons";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { TRPCClientError } from "@trpc/client";
@@ -186,6 +192,7 @@ const Item = ({
     type.schedulingType === SchedulingType.ROUND_ROBIN || type.schedulingType === SchedulingType.COLLECTIVE;
   const isCurrentUserHost = "isCurrentUserHost" in type && type.isCurrentUserHost;
   const showAssignedBadge = isRoundRobinOrCollective && isCurrentUserHost;
+  const visibilityStatusKey = getEventTypeVisibilityStatusKey({ hidden: type.hidden, teamId: type.teamId });
 
   const content = (): JSX.Element => (
     <div>
@@ -202,7 +209,7 @@ const Item = ({
         </small>
       ) : null}
       {!isManagedEventType && type.hidden && (
-        <span className="ml-2 text-gray-400 text-sm sm:hidden">{t("hidden")}</span>
+        <span className="ml-2 text-gray-400 text-sm sm:hidden">{t(visibilityStatusKey)}</span>
       )}
       {readOnly && (
         <Badge variant="gray" className="ml-2" data-testid="readonly-badge">
@@ -246,7 +253,7 @@ const Item = ({
                 </small>
               ) : null}
               {!isManagedEventType && type.hidden && (
-                <span className="ml-2 text-gray-400 text-sm sm:hidden">{t("hidden")}</span>
+                <span className="ml-2 text-gray-400 text-sm sm:hidden">{t(visibilityStatusKey)}</span>
               )}
               {readOnly && (
                 <Badge variant="gray" className="ml-2" data-testid="readonly-badge">
@@ -555,6 +562,19 @@ export const InfiniteEventTypeList = ({
             const isChildrenManagedEventType =
               type.metadata?.managedEventConfig !== undefined &&
               type.schedulingType !== SchedulingType.MANAGED;
+            const isArchivedTeamEvent = isArchivedTeamEventType({ hidden: type.hidden, teamId: type.teamId });
+            const visibilityActionKey = getEventTypeVisibilityActionKey({
+              hidden: type.hidden,
+              teamId: type.teamId,
+            });
+            const visibilityDescriptionKey = getEventTypeVisibilityDescriptionKey({
+              hidden: type.hidden,
+              teamId: type.teamId,
+            });
+            const visibilityStatusKey = getEventTypeVisibilityStatusKey({
+              hidden: type.hidden,
+              teamId: type.teamId,
+            });
             return (
               <li key={type.id}>
                 <div className="flex w-full items-center justify-between transition hover:bg-cal-muted">
@@ -596,14 +616,13 @@ export const InfiniteEventTypeList = ({
                         <div className="flex items-center justify-between space-x-2 rtl:space-x-reverse">
                           {!isManagedEventType && (
                             <>
-                              {type.hidden && <span className="text-gray-400 text-sm">{t("hidden")}</span>}
-                              <Tooltip
-                                content={
-                                  type.hidden ? t("show_eventtype_on_profile") : t("hide_from_profile")
-                                }>
+                              {type.hidden && (
+                                <span className="text-gray-400 text-sm">{t(visibilityStatusKey)}</span>
+                              )}
+                              <Tooltip content={t(visibilityDescriptionKey)}>
                                 <div className="self-center rounded-md p-2">
                                   <Switch
-                                    name="Hidden"
+                                    name={t(visibilityActionKey)}
                                     disabled={lockedByOrg}
                                     checked={!type.hidden}
                                     onCheckedChange={() => {
@@ -619,7 +638,7 @@ export const InfiniteEventTypeList = ({
                           )}
 
                           <ButtonGroup combined>
-                            {!isManagedEventType && (
+                            {!isManagedEventType && !isArchivedTeamEvent && (
                               <>
                                 <Tooltip content={t("preview")}>
                                   <Button
@@ -702,7 +721,7 @@ export const InfiniteEventTypeList = ({
                                     </DropdownItem>
                                   </DropdownMenuItem>
                                 )}
-                                {!isManagedEventType && (
+                                {!isManagedEventType && !isArchivedTeamEvent && (
                                   <DropdownMenuItem className="outline-none">
                                     <EventTypeEmbedButton
                                       namespace={type.slug}
@@ -749,7 +768,7 @@ export const InfiniteEventTypeList = ({
                       </DropdownMenuTrigger>
                       <DropdownMenuPortal>
                         <DropdownMenuContent>
-                          {!isManagedEventType && (
+                          {!isManagedEventType && !isArchivedTeamEvent && (
                             <>
                               <DropdownMenuItem className="outline-none">
                                 <DropdownItem
@@ -774,7 +793,7 @@ export const InfiniteEventTypeList = ({
                               </DropdownMenuItem>
                             </>
                           )}
-                          {isNativeShare ? (
+                          {isNativeShare && !isArchivedTeamEvent ? (
                             <DropdownMenuItem className="outline-none">
                               <DropdownItem
                                 data-testid={`event-type-duplicate-${type.id}`}
@@ -839,11 +858,11 @@ export const InfiniteEventTypeList = ({
                                 as={Label}
                                 htmlFor="hiddenSwitch"
                                 className="mt-2 inline cursor-pointer self-center pr-2">
-                                {type.hidden ? t("show_eventtype_on_profile") : t("hide_from_profile")}
+                                {t(visibilityActionKey)}
                               </Skeleton>
                               <Switch
                                 id="hiddenSwitch"
-                                name="Hidden"
+                                name={t(visibilityActionKey)}
                                 checked={!type.hidden}
                                 onCheckedChange={() => {
                                   setHiddenMutation.mutate({
@@ -930,9 +949,7 @@ const CTA = ({ profileOptions }: { profileOptions: ProfileOption[] }) => {
         }}
         placeholder={t("search")}
       />
-      <Button
-        data-testid="new-event-type"
-        href={`?dialog=new&eventPage=${profileOptions[0]?.slug ?? ""}`}>
+      <Button data-testid="new-event-type" href={`?dialog=new&eventPage=${profileOptions[0]?.slug ?? ""}`}>
         {t("new")}
       </Button>
       <CreateEventTypeDialog profileOptions={profileOptions} />

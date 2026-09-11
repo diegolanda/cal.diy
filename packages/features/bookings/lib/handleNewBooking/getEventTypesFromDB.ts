@@ -32,6 +32,7 @@ const getEventTypesFromDBSelect = {
     },
   },
   slug: true,
+  hidden: true,
   profile: {
     select: {
       organizationId: true,

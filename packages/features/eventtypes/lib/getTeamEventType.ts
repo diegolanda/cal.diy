@@ -4,6 +4,7 @@ import { getPublicEventSelect } from "./getPublicEvent";
 export async function getTeamEventType(teamSlug: string, meetingSlug: string, orgSlug: string | null) {
   return await prisma.eventType.findFirst({
     where: {
+      hidden: false,
       team: {
         ...getSlugOrRequestedSlug(teamSlug),
         parent: orgSlug ? getSlugOrRequestedSlug(orgSlug) : null,

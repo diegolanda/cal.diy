@@ -428,6 +428,7 @@ export const getPublicEvent = async (
     where: {
       slug: eventSlug,
       ...usersOrTeamQuery,
+      ...(isTeamEvent ? { hidden: false } : {}),
     },
     select: getPublicEventSelect(fetchAllUsers),
   });
