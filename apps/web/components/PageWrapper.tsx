@@ -9,36 +9,39 @@
 
 "use client";
 
-import { DefaultSeo } from "next-seo";
-import { Inter } from "next/font/google";
-import localFont from "next/font/local";
+import { Ubuntu, Ubuntu_Mono } from "next/font/google";
 import Head from "next/head";
 import Script from "next/script";
+import { DefaultSeo } from "next-seo";
 
 import "@calcom/embed-core/src/embed-iframe";
 import { IS_CALCOM, WEBAPP_URL } from "@calcom/lib/constants";
 import { getCalcomUrl } from "@calcom/lib/getCalcomUrl";
 import { buildCanonical } from "@calcom/lib/next-seo.config";
 import { IconSprites } from "@calcom/ui/components/icon";
-
+import { GoogleTagManagerComponent } from "@components/GTM";
 import type { AppProps } from "@lib/app-providers";
 import AppProviders from "@lib/app-providers";
 import { seoConfig } from "@lib/config/next-seo.config";
-
-import { GoogleTagManagerComponent } from "@components/GTM";
 
 export interface CalPageWrapper {
   (props?: AppProps): JSX.Element;
   PageWrapper?: AppProps["Component"]["PageWrapper"];
 }
 
-const interFont = Inter({ subsets: ["latin"], variable: "--font-sans", preload: true, display: "swap" });
-const calFont = localFont({
-  src: "../fonts/CalSans-SemiBold.woff2",
-  variable: "--font-cal",
+const ubuntuFont = Ubuntu({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+  variable: "--font-sans",
   preload: true,
   display: "swap",
-  weight: "600",
+});
+const ubuntuMonoFont = Ubuntu_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-mono",
+  preload: true,
+  display: "swap",
 });
 
 function PageWrapper(props: AppProps) {
@@ -89,8 +92,9 @@ function PageWrapper(props: AppProps) {
 
       <style jsx global>{`
         :root {
-          --font-sans: ${interFont.style.fontFamily}, system-ui;
-          --font-cal: ${calFont.style.fontFamily};
+          --font-sans: ${ubuntuFont.style.fontFamily}, "Avenir Next", "Segoe UI", system-ui, sans-serif;
+          --font-cal: ${ubuntuFont.style.fontFamily}, "Avenir Next", "Segoe UI", system-ui, sans-serif;
+          --font-mono: ${ubuntuMonoFont.style.fontFamily}, ui-monospace, monospace;
         }
       `}</style>
       <IconSprites />

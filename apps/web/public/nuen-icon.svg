@@ -1,14 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="#071b33" />
-  <text
-    x="50%"
-    y="50%"
-    dominant-baseline="central"
-    text-anchor="middle"
-    fill="#ffffff"
-    font-family="Ubuntu, Avenir Next, Segoe UI, sans-serif"
-    font-size="34"
-    font-weight="700"
-    letter-spacing="-1"
-  >n.</text>
+  <g fill="#ffffff" transform="translate(18.85 43) scale(.034 -.034)">
+    <path d="M70 508Q108 519 168 528.5Q228 538 294 538Q361 538 405.5 520.5Q450 503 476 471Q502 439 513 395Q524 351 524 297V0H375V279Q375 351 356 381Q337 411 285 411Q269 411 251 409.5Q233 408 219 406V0H70Z" />
+    <path
+      d="M70-4Q29-4 12.5 18Q-4 40-4 71Q-4 103 12.5 125Q29 147 70 147Q111 147 127.5 125Q144 103 144 71Q144 40 127.5 18Q111-4 70-4Z"
+      transform="translate(560)"
+    />
+  </g>
 </svg>

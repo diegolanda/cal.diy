@@ -4,6 +4,11 @@
 @import "../../../packages/coss-ui/src/styles/globals.css";
 @import "./raqb.css";
 
+@theme inline {
+  --font-mono: var(--font-mono);
+  --shadow-card: var(--shadow-card);
+}
+
 :root {
   --nuen-night: #020817;
   --nuen-primary: #071b33;
@@ -13,32 +18,92 @@
   --nuen-surface: #ffffff;
   --nuen-border: #c5c5d6;
   --nuen-muted: #454654;
+  --nuen-muted-strong: #575e70;
+  --nuen-label: #686976;
+  --nuen-accent-blue: #93c5fd;
+  --nuen-accent-purple: #c4b5fd;
+  --nuen-accent-pink: #f0abfc;
+
+  --radius: 0.75rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 1.5rem;
 
   --cal-bg: var(--nuen-surface);
   --cal-bg-subtle: var(--nuen-paper);
   --cal-bg-muted: var(--nuen-paper);
+  --cal-bg-emphasis: #eef1f5;
+  --cal-bg-inverted: var(--nuen-night);
   --cal-bg-primary: var(--nuen-primary);
   --cal-bg-primary-emphasis: var(--nuen-navy);
+  --cal-bg-primary-muted: #eef1f5;
+  --cal-bg-brand: var(--nuen-primary);
+  --cal-bg-brand-emphasis: var(--nuen-navy);
+  --cal-bg-brand-muted: #eef1f5;
   --cal-border: var(--nuen-border);
+  --cal-border-emphasis: var(--nuen-label);
+  --cal-border-subtle: #dfe0e7;
+  --cal-border-muted: #eef1f5;
+  --cal-border-booker: var(--nuen-border);
   --cal-text-emphasis: var(--nuen-ink);
   --cal-text: var(--nuen-muted);
+  --cal-text-subtle: var(--nuen-muted-strong);
+  --cal-text-muted: var(--nuen-label);
+  --cal-text-inverted: var(--nuen-surface);
   --cal-brand: var(--nuen-primary);
   --cal-brand-emphasis: var(--nuen-navy);
+  --cal-brand-muted: var(--nuen-border);
+  --cal-brand-subtle: var(--nuen-accent-blue);
+  --cal-brand-accent: var(--nuen-surface);
+  --cal-brand-text: var(--nuen-surface);
+
+  --shadow-card: 0 18px 40px rgb(7 27 51 / 12%);
+  --shadow-dropdown: 0 18px 40px rgb(7 27 51 / 12%);
 }
 
 .dark {
-  --cal-bg: var(--nuen-primary);
-  --cal-bg-subtle: var(--nuen-night);
-  --cal-bg-muted: var(--nuen-navy);
-  --cal-bg-emphasis: var(--nuen-navy);
+  --cal-bg: #09090b;
+  --cal-bg-subtle: #000000;
+  --cal-bg-muted: #18181b;
+  --cal-bg-emphasis: #27272a;
+  --cal-bg-inverted: var(--nuen-paper);
   --cal-bg-primary: var(--nuen-paper);
   --cal-bg-primary-emphasis: var(--nuen-border);
+  --cal-bg-primary-muted: #18181b;
+  --cal-bg-brand: var(--nuen-paper);
+  --cal-bg-brand-emphasis: var(--nuen-border);
+  --cal-bg-brand-muted: #18181b;
   --cal-border: rgb(255 255 255 / 14%);
+  --cal-border-booker: var(--cal-border-subtle);
   --cal-border-subtle: rgb(255 255 255 / 10%);
+  --cal-border-muted: #18181b;
+  --cal-border-emphasis: rgb(255 255 255 / 28%);
   --cal-text-emphasis: var(--nuen-paper);
   --cal-text: var(--nuen-border);
+  --cal-text-subtle: #a1a1aa;
+  --cal-text-muted: #a3a3a3;
+  --cal-text-inverted: var(--nuen-night);
   --cal-brand: var(--nuen-paper);
   --cal-brand-emphasis: var(--nuen-border);
+  --cal-brand-muted: #27272a;
+  --cal-brand-subtle: var(--nuen-accent-blue);
+  --cal-brand-accent: var(--nuen-night);
+  --cal-brand-text: var(--nuen-night);
+}
+
+.nuen-gradient-text {
+  color: transparent;
+  background-image: linear-gradient(
+    135deg,
+    var(--nuen-accent-blue) 0%,
+    var(--nuen-accent-purple) 50%,
+    var(--nuen-accent-pink) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
 }
 
 ::-moz-selection {

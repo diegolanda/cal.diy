@@ -40,6 +40,7 @@
     "./components/layout": "./components/layout/index.ts",
     "./components/list": "./components/list/index.ts",
     "./components/logo": "./components/logo/index.ts",
+    "./components/logo/Logo": "./components/logo/Logo.tsx",
     "./components/meta": "./components/meta/index.ts",
     "./components/navigation": "./components/navigation/index.ts",
     "./components/organization-banner": "./components/organization-banner/index.ts",

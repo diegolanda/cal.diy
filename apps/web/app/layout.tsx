@@ -3,8 +3,7 @@ import { loadTranslations } from "@calcom/i18n/server";
 import { IconSprites } from "@calcom/ui/components/icon";
 import { buildLegacyRequest } from "@lib/buildLegacyCtx";
 import { dir } from "i18next";
-import { Ubuntu } from "next/font/google";
-import localFont from "next/font/local";
+import { Ubuntu, Ubuntu_Mono } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import Script from "next/script";
 import type React from "react";
@@ -22,12 +21,12 @@ const ubuntuFont = Ubuntu({
   preload: true,
   display: "swap",
 });
-const calFont = localFont({
-  src: "../fonts/CalSans-SemiBold.woff2",
-  variable: "--font-cal",
+const ubuntuMonoFont = Ubuntu_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-mono",
   preload: true,
-  display: "block",
-  weight: "600",
+  display: "swap",
 });
 
 export const viewport = {
@@ -54,7 +53,7 @@ export const metadata = {
     apple: "/api/logo?type=apple-touch-icon",
     other: [
       {
-        rel: "icon-mask",
+        rel: "mask-icon",
         url: "/nuen-icon.svg",
         color: "#071b33",
       },
@@ -122,7 +121,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <style>{`
           :root {
             --font-sans: ${ubuntuFont.style.fontFamily.replace(/'/g, "")}, "Avenir Next", "Segoe UI", system-ui, sans-serif;
-            --font-cal: ${calFont.style.fontFamily.replace(/'/g, "")};
+            --font-cal: ${ubuntuFont.style.fontFamily.replace(/'/g, "")}, "Avenir Next", "Segoe UI", system-ui, sans-serif;
+            --font-mono: ${ubuntuMonoFont.style.fontFamily.replace(/'/g, "")}, ui-monospace, monospace;
           }
         `}</style>
         {process.env.NODE_ENV === "development" && (
