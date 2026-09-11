@@ -26,11 +26,10 @@ import { createContainer } from "@evyweb/ioctopus";
 import { watchlistModule } from "../modules/Watchlist.module";
 import { WATCHLIST_DI_TOKENS } from "../Watchlist.tokens";
 
-class PermissionCheckService {
-  constructor(_prisma?: unknown) {}
-  async checkPermission(..._args: unknown[]) { return true; }
-  async hasPermission(..._args: unknown[]) { return true; }
-  async getTeamIdsWithPermission(..._args: unknown[]): Promise<number[]> { return []; }
+class DisabledOrganizationPermissionService {
+  async checkPermission(): Promise<boolean> {
+    return false;
+  }
 }
 
 export const watchlistContainer= createContainer();
@@ -97,7 +96,7 @@ export function getOrganizationWatchlistOperationsService(
 ): OrganizationWatchlistOperationsService {
   const watchlistRepo = new WatchlistRepository(prisma);
   const bookingReportRepo = new PrismaBookingReportRepository(prisma);
-  const permissionCheckService = new PermissionCheckService();
+  const permissionCheckService = new DisabledOrganizationPermissionService();
 
   return new OrganizationWatchlistOperationsService({
     watchlistRepo,
@@ -123,7 +122,7 @@ export function getAdminWatchlistQueryService(): AdminWatchlistQueryService {
 export function getOrganizationWatchlistQueryService(): OrganizationWatchlistQueryService {
   const watchlistRepo = new WatchlistRepository(prisma);
   const userRepo = new UserRepository(prisma);
-  const permissionCheckService = new PermissionCheckService();
+  const permissionCheckService = new DisabledOrganizationPermissionService();
 
   return new OrganizationWatchlistQueryService({
     watchlistRepo,

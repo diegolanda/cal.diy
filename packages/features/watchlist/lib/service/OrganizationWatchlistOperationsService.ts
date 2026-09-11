@@ -14,12 +14,14 @@ import type {
 import { WatchlistOperationsService } from "./WatchlistOperationsService";
 
 type PermissionString = string;
-class PermissionCheckService {
-  constructor(_prisma?: unknown) {}
-  async checkPermission(..._args: unknown[]) { return true; }
-  async hasPermission(..._args: unknown[]) { return true; }
-  async getTeamIdsWithPermission(..._args: unknown[]): Promise<number[]> { return []; }
-}
+type PermissionCheckService = {
+  checkPermission(input: {
+    userId: number;
+    teamId: number;
+    permission: PermissionString;
+    fallbackRoles: MembershipRole[];
+  }): Promise<boolean>;
+};
 
 type Deps = {
   watchlistRepo: WatchlistRepository;
