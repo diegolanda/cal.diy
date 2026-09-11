@@ -13,6 +13,7 @@ Start with one `web` replica. The database is the shared source of truth, so a s
 without changing the application architecture. Keep at least one previous successful deployment available for rollback.
 
 Set the `web` health check path to `/api/health`. A healthy response is HTTP 200 with `{"status":"ok"}`. A database failure returns HTTP 503 without an error message or connection detail.
+Set `RAILWAY_HEALTHCHECK_TIMEOUT_SEC=600` on the `web` service so database migrations can finish before Railway stops the deployment.
 
 Use separate Railway environments for staging and production. Give each environment separate Google, email, and encryption credentials.
 
@@ -41,6 +42,7 @@ Set these variables on the `web` service. Store generated values and provider cr
 | `EMAIL_FROM` | A verified address such as `calendar@nuen.io`. |
 | `EMAIL_FROM_NAME` | `Nuen` |
 | `CRON_SECRET` | Generate a separate random secret for scheduled endpoint calls. |
+| `RAILWAY_HEALTHCHECK_TIMEOUT_SEC` | `600`. Allow startup migrations to finish before the deployment health check times out. |
 | `CALCOM_TELEMETRY_DISABLED` | `1` |
 
 The Google OAuth client must allow both redirect URIs:
@@ -88,7 +90,7 @@ Railway cron jobs run a service command and exit; they do not make authenticated
 
 - Variables: `CRON_SECRET=${{web.CRON_SECRET}}` and `WEB_PRIVATE_URL=http://${{web.RAILWAY_PRIVATE_DOMAIN}}:${{web.PORT}}`.
 - Cron schedule: `*/5 * * * *`.
-- Start command: `wget -qO- --header="Authorization: Bearer ${CRON_SECRET}" "${WEB_PRIVATE_URL}/api/tasks/cron"`.
+- Start command: `/bin/sh -c 'wget -qO- --header="Authorization: Bearer ${CRON_SECRET}" "${WEB_PRIVATE_URL}/api/tasks/cron"'`.
 
 The command exits after each request. Railway skips a scheduled invocation when the previous run is still active. Railway cron jobs cannot run more often than every five minutes, so queued work can be delayed by that amount. Railway cron schedules use UTC.
 
@@ -133,7 +135,7 @@ Perform this once in staging, repeat it in production, and record the Team and e
 1. Have each of the three users sign in with their verified `@nuen.io` Google account so the local user exists.
 2. Have a configured system administrator create the `Recruitment`, `Billing`, and `HR` root Teams.
 3. Add the appropriate existing Workspace users to each Team. Give routine schedulers `MEMBER`; give Team maintainers `ADMIN`.
-4. In each user's Apps page, connect Google Calendar, choose the calendars used for conflict checks, and select the destination calendar.
+4. In each user's **Settings > My Account > Calendars** page, connect Google Calendar. Select the calendars used for conflict checks and the destination calendar.
 5. Install Google Meet and make it the location for event types that need a video call.
 6. Have a Team owner or administrator create the round-robin event, then add the participating Team members as hosts and confirm each host has usable availability.
 7. Configure and rebuild the Nuen website with these public variables:
