@@ -6,7 +6,7 @@ This runbook defines the small production deployment for Nuen. It requires one w
 
 Create these services in one Railway project and environment:
 
-- `web`: Build the repository root with `Dockerfile`. Add the `cal.nuen.io` custom domain. Railway supplies the listening port.
+- `web`: Build the repository root with `Dockerfile`. Add the `cal.nuen.io` custom domain. Set `PORT=3000` on the service and use target port 3000 for the custom domain.
 - `Postgres`: Use Railway PostgreSQL. Keep it on Railway's private network without a public domain.
 
 Start with one `web` replica. The database is the shared source of truth, so a second replica can be added later
@@ -33,6 +33,7 @@ Set these variables on the `web` service. Store generated values and provider cr
 | `DATABASE_URL` | Reference `Postgres.DATABASE_URL`. |
 | `DATABASE_DIRECT_URL` | Use the same private database URL while no pooler is present. |
 | `DATABASE_HOST` | `${{Postgres.PGHOST}}:${{Postgres.PGPORT}}`. The startup check requires both values. |
+| `PORT` | `3000`. The Docker image, Railway health check, and custom domain must use the same port. |
 | `NEXT_PUBLIC_WEBAPP_URL` | `https://cal.nuen.io` |
 | `NEXTAUTH_URL` | `https://cal.nuen.io` |
 | `NEXT_PUBLIC_WEBSITE_URL` | `https://cal.nuen.io`; Cal booking URLs use this value. The Nuen landing page links to explicit booking URLs. |
