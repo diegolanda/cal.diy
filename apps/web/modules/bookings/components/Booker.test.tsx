@@ -270,7 +270,13 @@ describe("Booker", () => {
     expect(screen.getByTestId("nuen-booking-promo-headline")).toHaveTextContent(
       "Hire senior LATAM engineers without the agency markup."
     );
-    expect(screen.getByText("engineers without the agency markup.")).toHaveClass("nuen-gradient-text");
+    expect(screen.getByTestId("nuen-booking-promo-headline").parentElement).toHaveClass("text-center");
+    expect(screen.getByTestId("nuen-booking-promo-headline-lead")).toHaveClass("block", "whitespace-nowrap");
+    expect(screen.getByTestId("nuen-booking-promo-headline-accent")).toHaveClass(
+      "nuen-gradient-text",
+      "block",
+      "whitespace-nowrap"
+    );
   });
 
   it("does not show the Nuen campaign in embedded booking pages", () => {

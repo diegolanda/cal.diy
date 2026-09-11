@@ -9,16 +9,22 @@ export const NuenBookingPromo = (): JSX.Element => {
   return (
     <section
       data-testid="nuen-booking-promo"
-      className="dark relative z-10 mx-auto w-full max-w-5xl px-5 pb-8 pt-2 sm:px-8 sm:pb-10">
+      className="dark relative z-10 mx-auto w-full max-w-7xl px-5 pt-2 pb-8 sm:px-8 sm:pb-10">
       <Logo inline={false} className="block [&_img]:h-5" />
-      <div className="mt-12 max-w-3xl sm:mt-16">
+      <div className="mx-auto mt-12 max-w-6xl text-center sm:mt-16">
         <p
           data-testid="nuen-booking-promo-headline"
-          className="text-4xl font-semibold leading-[1.08] tracking-[-0.035em] sm:text-5xl lg:text-6xl">
-          <span className="text-white">{t("nuen_booking_promo_headline_lead")} </span>
-          <span className="nuen-gradient-text">{t("nuen_booking_promo_headline_accent")}</span>
+          className="font-semibold text-[clamp(1rem,4.5vw,3.75rem)] leading-[1.08] tracking-[-0.035em]">
+          <span data-testid="nuen-booking-promo-headline-lead" className="block whitespace-nowrap text-white">
+            {t("nuen_booking_promo_headline_lead")}
+          </span>{" "}
+          <span
+            data-testid="nuen-booking-promo-headline-accent"
+            className="nuen-gradient-text block whitespace-nowrap">
+            {t("nuen_booking_promo_headline_accent")}
+          </span>
         </p>
-        <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+        <p className="mx-auto mt-6 max-w-2xl text-base text-slate-300 leading-7 sm:text-lg">
           {t("nuen_booking_promo_description")}
         </p>
       </div>
