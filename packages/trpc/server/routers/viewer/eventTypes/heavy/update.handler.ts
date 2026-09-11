@@ -176,10 +176,6 @@ export const updateHandler = async ({ ctx, input }: UpdateOptions) => {
     },
   });
 
-  if (input.teamId && eventType.team?.id && input.teamId !== eventType.team.id) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
-  }
-
   const finalSeatsPerTimeSlot =
     seatsPerTimeSlot === undefined ? eventType.seatsPerTimeSlot : seatsPerTimeSlot;
   const finalRecurringEvent = recurringEvent === undefined ? eventType.recurringEvent : recurringEvent;

@@ -6,8 +6,7 @@ import {
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import { markdownToSafeHTML } from "@calcom/lib/markdownToSafeHTML";
 import prisma from "@calcom/prisma";
-import type { MembershipRole } from "@calcom/prisma/enums";
-import { PeriodType } from "@calcom/prisma/enums";
+import { MembershipRole, PeriodType, SchedulingType } from "@calcom/prisma/enums";
 import type { CustomInputSchema } from "@calcom/prisma/zod-utils";
 import { EventTypeMetaDataSchema } from "@calcom/prisma/zod-utils";
 import { TRPCError } from "@trpc/server";
@@ -109,6 +108,9 @@ export const createEventPbacProcedure = (
         .object({
           id: z.number().optional(),
           eventTypeId: z.number().optional(),
+          teamId: z.number().nullable().optional(),
+          schedulingType: z.nativeEnum(SchedulingType).nullable().optional(),
+          hidden: z.boolean().optional(),
           users: z.array(z.number()).optional(),
           hosts: z.array(z.object({ userId: z.number() }).passthrough()).optional(),
         })
@@ -126,6 +128,14 @@ export const createEventPbacProcedure = (
           id: true,
           userId: true,
           teamId: true,
+          schedulingType: true,
+          hidden: true,
+          hosts: {
+            select: {
+              userId: true,
+              scheduleId: true,
+            },
+          },
           users: {
             select: {
               id: true,
@@ -150,6 +160,17 @@ export const createEventPbacProcedure = (
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
+      const effectiveTeamId = input.teamId === undefined ? event.teamId : input.teamId;
+      const isTeamTransition = input.teamId !== undefined && input.teamId !== event.teamId;
+      const permissionCheckService = new TeamPermissionService(ctx.prisma);
+
+      if (event.teamId && input.teamId === null) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Team events cannot be converted into personal events",
+        });
+      }
+
       // Check if user has permission to access/modify this event
       if (!event.teamId) {
         // Personal event - must be owner or assigned user
@@ -161,7 +182,6 @@ export const createEventPbacProcedure = (
         }
       } else {
         // Team event - check PBAC/fallback permissions
-        const permissionCheckService = new TeamPermissionService(ctx.prisma);
         const hasPermission = await permissionCheckService.checkPermission({
           userId: ctx.user.id,
           teamId: event.teamId,
@@ -173,6 +193,29 @@ export const createEventPbacProcedure = (
           throw new TRPCError({
             code: "FORBIDDEN",
             message: `Permission required: ${permission}`,
+          });
+        }
+      }
+
+      if (isTeamTransition) {
+        const teamIdsToAuthorize = [event.teamId, effectiveTeamId].filter(
+          (teamId): teamId is number => teamId !== null
+        );
+        const hasTransitionPermission = await Promise.all(
+          teamIdsToAuthorize.map((teamId) =>
+            permissionCheckService.checkPermission({
+              userId: ctx.user.id,
+              teamId,
+              permission: "eventType.update",
+              fallbackRoles: [MembershipRole.ADMIN, MembershipRole.OWNER],
+            })
+          )
+        );
+
+        if (hasTransitionPermission.some((hasPermission) => !hasPermission)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Team owner or administrator access is required to move this event",
           });
         }
       }
@@ -198,18 +241,73 @@ export const createEventPbacProcedure = (
         }
       }
 
-      if (input.hosts && event.team) {
-        const acceptedTeamMemberIds = new Set(event.team.members.map((member) => member.userId));
-        const allHostsAreAcceptedMembers = input.hosts.every((host) =>
+      const effectiveHosts = input.hosts ?? event.hosts ?? [];
+      const effectiveUserIds = input.users ?? event.users.map((user) => user.id);
+      if (effectiveTeamId && (input.hosts !== undefined || input.users !== undefined || isTeamTransition)) {
+        const assignedUserIds = Array.from(
+          new Set([...effectiveHosts.map((host) => host.userId), ...effectiveUserIds])
+        );
+        const scheduledHosts = effectiveHosts.flatMap((host) =>
+          typeof host.scheduleId === "number" ? [{ userId: host.userId, scheduleId: host.scheduleId }] : []
+        );
+        const [memberships, schedules] = await Promise.all([
+          ctx.prisma.membership.findMany({
+            where: {
+              teamId: effectiveTeamId,
+              userId: { in: assignedUserIds },
+              accepted: true,
+              team: { parentId: null, isOrganization: false },
+            },
+            select: { userId: true },
+          }),
+          scheduledHosts.length > 0
+            ? ctx.prisma.schedule.findMany({
+                where: {
+                  OR: scheduledHosts.map((host) => ({ id: host.scheduleId, userId: host.userId })),
+                },
+                select: { id: true, userId: true },
+              })
+            : Promise.resolve([]),
+        ]);
+        const acceptedTeamMemberIds = new Set(memberships.map((membership) => membership.userId));
+        const validScheduleKeys = new Set(schedules.map((schedule) => `${schedule.userId}:${schedule.id}`));
+        const allHostsAreAcceptedMembers = effectiveHosts.every((host) =>
           acceptedTeamMemberIds.has(host.userId)
         );
+        const allUsersAreAcceptedMembers = effectiveUserIds.every((userId) =>
+          acceptedTeamMemberIds.has(userId)
+        );
+        const allSchedulesBelongToHosts = scheduledHosts.every((host) =>
+          validScheduleKeys.has(`${host.userId}:${host.scheduleId}`)
+        );
 
-        if (!allHostsAreAcceptedMembers) {
+        if (!allHostsAreAcceptedMembers || !allUsersAreAcceptedMembers) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "Cannot assign hosts outside of accepted team membership",
           });
         }
+        if (!allSchedulesBelongToHosts) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Each host schedule must belong to that host",
+          });
+        }
+      }
+
+      const effectiveSchedulingType = input.schedulingType ?? event.schedulingType;
+      const effectiveHidden = input.hidden ?? event.hidden;
+      const effectiveHostCount = effectiveHosts.length;
+      if (
+        effectiveTeamId &&
+        effectiveSchedulingType === SchedulingType.ROUND_ROBIN &&
+        !effectiveHidden &&
+        effectiveHostCount === 0
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "An active round-robin Team event must have at least one host",
+        });
       }
 
       return next();

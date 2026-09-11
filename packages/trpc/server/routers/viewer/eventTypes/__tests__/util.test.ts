@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@calcom/prisma";
-import { MembershipRole } from "@calcom/prisma/enums";
+import { MembershipRole, SchedulingType } from "@calcom/prisma/enums";
 import { TRPCError } from "@trpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { authedProcedure } from "../../../procedures/authedProcedure";
@@ -12,6 +12,10 @@ describe("createEventPbacProcedure", () => {
     },
     membership: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
+    },
+    schedule: {
+      findMany: vi.fn(),
     },
   } as unknown as PrismaClient;
 
@@ -32,6 +36,8 @@ describe("createEventPbacProcedure", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPrisma.membership.findFirst = vi.fn().mockResolvedValue({ id: 1 });
+    mockPrisma.membership.findMany = vi.fn().mockResolvedValue([{ userId: 1 }, { userId: 2 }, { userId: 3 }]);
+    mockPrisma.schedule.findMany = vi.fn().mockResolvedValue([]);
   });
 
   describe("personal events", () => {
@@ -399,6 +405,217 @@ describe("createEventPbacProcedure", () => {
         code: "FORBIDDEN",
         message: "Cannot assign hosts outside of accepted team membership",
       });
+    });
+
+    it("should allow a host schedule owned by that host", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue(teamEvent);
+      mockPrisma.schedule.findMany = vi.fn().mockResolvedValue([{ id: 20, userId: 2 }]);
+
+      const procedure = createEventPbacProcedure("eventType.update");
+      const middleware = getMiddleware(procedure);
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 2, hosts: [{ userId: 2, scheduleId: 20 }] },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).resolves.not.toThrow();
+    });
+
+    it("should deny a host schedule owned by another user", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue(teamEvent);
+      mockPrisma.schedule.findMany = vi.fn().mockResolvedValue([]);
+
+      const procedure = createEventPbacProcedure("eventType.update");
+      const middleware = getMiddleware(procedure);
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 2, hosts: [{ userId: 2, scheduleId: 99 }] },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Each host schedule must belong to that host",
+      });
+    });
+  });
+
+  describe("Team transitions and active round robin events", () => {
+    const personalEvent = {
+      id: 1,
+      userId: 1,
+      teamId: null,
+      schedulingType: null,
+      hidden: false,
+      _count: { hosts: 0 },
+      users: [{ id: 1 }],
+      team: null,
+    };
+    const roundRobinEvent = {
+      id: 2,
+      userId: null,
+      teamId: 10,
+      schedulingType: SchedulingType.ROUND_ROBIN,
+      hidden: false,
+      hosts: [{ userId: 1, scheduleId: null }],
+      users: [],
+      team: { members: [{ userId: 1 }] },
+    };
+
+    it("denies attaching a personal event without target Team management permission", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue(personalEvent);
+      mockPrisma.membership.findFirst = vi.fn().mockResolvedValue(null);
+
+      const middleware = getMiddleware(createEventPbacProcedure("eventType.update"));
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 1, teamId: 20 },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    });
+
+    it("allows attaching a personal event with target Team management permission", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue(personalEvent);
+
+      const middleware = getMiddleware(createEventPbacProcedure("eventType.update"));
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 1, teamId: 20 },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).resolves.not.toThrow();
+    });
+
+    it("denies converting a Team event into a personal event", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue(roundRobinEvent);
+
+      const middleware = getMiddleware(createEventPbacProcedure("eventType.update"));
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 2, teamId: null },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Team events cannot be converted into personal events",
+      });
+    });
+
+    it("rejects a Team switch when existing hosts are not accepted target Team members", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue({
+        ...roundRobinEvent,
+        hosts: [{ userId: 2, scheduleId: null }],
+      });
+      mockPrisma.membership.findMany = vi.fn().mockResolvedValue([{ userId: 1 }]);
+
+      const middleware = getMiddleware(createEventPbacProcedure("eventType.update"));
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 2, teamId: 20 },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Cannot assign hosts outside of accepted team membership",
+      });
+    });
+
+    it("rejects a Team switch when legacy assigned users are not accepted target Team members", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue({
+        ...roundRobinEvent,
+        hosts: [{ userId: 1, scheduleId: null }],
+        users: [{ id: 2 }],
+      });
+      mockPrisma.membership.findMany = vi.fn().mockResolvedValue([{ userId: 1 }]);
+
+      const middleware = getMiddleware(createEventPbacProcedure("eventType.update"));
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 2, teamId: 20 },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Cannot assign hosts outside of accepted team membership",
+      });
+    });
+
+    it("denies removing the final host from an active round robin Team event", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue(roundRobinEvent);
+
+      const middleware = getMiddleware(createEventPbacProcedure("eventType.update"));
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 2, hosts: [] },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    });
+
+    it("allows a hidden round robin Team event to have no hosts", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue(roundRobinEvent);
+
+      const middleware = getMiddleware(createEventPbacProcedure("eventType.update"));
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 2, hidden: true, hosts: [] },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).resolves.not.toThrow();
     });
   });
 
