@@ -2,7 +2,7 @@ import { getGoogleWorkspaceAuthConfig } from "@calcom/features/auth/lib/googleWo
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
 import { Prisma, type PrismaClient } from "@calcom/prisma/client";
-import { IdentityProvider, MembershipRole, UserPermissionRole } from "@calcom/prisma/enums";
+import { IdentityProvider, MembershipRole, SchedulingType, UserPermissionRole } from "@calcom/prisma/enums";
 
 const managedTeamSelect = {
   id: true,
@@ -138,15 +138,7 @@ export class TeamService {
         where: { email: { equals: email, mode: "insensitive" } },
         select: { id: true, email: true, emailVerified: true, identityProvider: true },
       });
-      const workspace = getGoogleWorkspaceAuthConfig();
-      const emailParts = user?.email.trim().toLowerCase().split("@");
-      const isEligible =
-        user?.identityProvider === IdentityProvider.GOOGLE &&
-        Boolean(user.emailVerified) &&
-        emailParts?.length === 2 &&
-        emailParts[1] === workspace.domain;
-
-      if (!user || !isEligible) {
+      if (!user || !this.isEligibleWorkspaceUser(user)) {
         throw new ErrorWithCode(ErrorCode.NotFound, "No eligible Workspace user has that email");
       }
 
@@ -182,7 +174,7 @@ export class TeamService {
           teamId,
           team: { isOrganization: false, parentId: null },
         },
-        select: { id: true, accepted: true, role: true },
+        select: { id: true, userId: true, accepted: true, role: true },
       });
       if (!membership) {
         throw new ErrorWithCode(ErrorCode.NotFound, "Team membership not found");
@@ -199,6 +191,32 @@ export class TeamService {
           throw new ErrorWithCode(ErrorCode.Forbidden, "The final Team owner cannot be removed");
         }
       }
+
+      const legacyEventTypes = await transaction.eventType.findMany({
+        where: { teamId, users: { some: { id: membership.userId } } },
+        select: { id: true },
+      });
+      await Promise.all(
+        legacyEventTypes.map(({ id }) =>
+          transaction.eventType.update({
+            where: { id },
+            data: { users: { disconnect: { id: membership.userId } } },
+            select: { id: true },
+          })
+        )
+      );
+      await transaction.host.deleteMany({
+        where: { userId: membership.userId, eventType: { teamId } },
+      });
+      await transaction.eventType.updateMany({
+        where: {
+          teamId,
+          hidden: false,
+          schedulingType: SchedulingType.ROUND_ROBIN,
+          hosts: { none: {} },
+        },
+        data: { hidden: true },
+      });
 
       return transaction.membership.delete({
         where: { id: membership.id },
@@ -227,10 +245,17 @@ export class TeamService {
           accepted: true,
           team: { isOrganization: false, parentId: null },
         },
-        select: { id: true, role: true },
+        select: {
+          id: true,
+          role: true,
+          user: { select: { email: true, emailVerified: true, identityProvider: true } },
+        },
       });
       if (!membership) {
         throw new ErrorWithCode(ErrorCode.NotFound, "Team membership not found");
+      }
+      if (!this.isEligibleWorkspaceUser(membership.user)) {
+        throw new ErrorWithCode(ErrorCode.Forbidden, "Only eligible Workspace users can change roles");
       }
 
       const changesOwnership = membership.role === MembershipRole.OWNER || role === MembershipRole.OWNER;
@@ -313,5 +338,19 @@ export class TeamService {
     if (existingTeam) {
       throw new ErrorWithCode(ErrorCode.BadRequest, "A Team with this slug already exists");
     }
+  }
+
+  private isEligibleWorkspaceUser(user: {
+    email: string;
+    emailVerified: Date | null;
+    identityProvider: IdentityProvider;
+  }): boolean {
+    const emailParts = user.email.trim().toLowerCase().split("@");
+    return (
+      user.identityProvider === IdentityProvider.GOOGLE &&
+      Boolean(user.emailVerified) &&
+      emailParts.length === 2 &&
+      emailParts[1] === getGoogleWorkspaceAuthConfig().domain
+    );
   }
 }

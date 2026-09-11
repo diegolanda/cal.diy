@@ -1,6 +1,6 @@
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { Prisma, type PrismaClient } from "@calcom/prisma/client";
-import { IdentityProvider, MembershipRole, UserPermissionRole } from "@calcom/prisma/enums";
+import { IdentityProvider, MembershipRole, SchedulingType, UserPermissionRole } from "@calcom/prisma/enums";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TeamService } from "./TeamService";
 
@@ -12,6 +12,10 @@ describe("TeamService", () => {
   const membershipDelete = vi.fn();
   const membershipUpdate = vi.fn();
   const membershipCount = vi.fn();
+  const hostDeleteMany = vi.fn();
+  const eventTypeFindMany = vi.fn();
+  const eventTypeUpdate = vi.fn();
+  const eventTypeUpdateMany = vi.fn();
   const teamFindFirst = vi.fn();
   const teamCreate = vi.fn();
   const teamUpdate = vi.fn();
@@ -34,6 +38,8 @@ describe("TeamService", () => {
         count: membershipCount,
       },
       team: { findFirst: teamFindFirst, create: teamCreate, update: teamUpdate },
+      host: { deleteMany: hostDeleteMany },
+      eventType: { findMany: eventTypeFindMany, update: eventTypeUpdate, updateMany: eventTypeUpdateMany },
       user: { findFirst: userFindFirst },
       $transaction: transaction,
     } as unknown as PrismaClient;
@@ -41,6 +47,7 @@ describe("TeamService", () => {
       callback(prisma)
     );
     service = new TeamService(prisma);
+    eventTypeFindMany.mockResolvedValue([]);
   });
 
   it("lists only the caller's accepted root Teams", async () => {
@@ -124,6 +131,7 @@ describe("TeamService", () => {
   it("never removes the final accepted owner", async () => {
     membershipFindFirst.mockResolvedValueOnce({ role: MembershipRole.OWNER }).mockResolvedValueOnce({
       id: 2,
+      userId: 9,
       accepted: true,
       role: MembershipRole.OWNER,
     });
@@ -138,6 +146,7 @@ describe("TeamService", () => {
   it("removes a membership when an accepted owner remains", async () => {
     membershipFindFirst.mockResolvedValueOnce({ role: MembershipRole.OWNER }).mockResolvedValueOnce({
       id: 2,
+      userId: 9,
       accepted: true,
       role: MembershipRole.OWNER,
     });
@@ -148,12 +157,48 @@ describe("TeamService", () => {
       id: 2,
     });
     expect(membershipDelete).toHaveBeenCalledWith({ where: { id: 2 }, select: { id: true } });
+    expect(hostDeleteMany).toHaveBeenCalledWith({ where: { userId: 9, eventType: { teamId: 42 } } });
+    expect(eventTypeUpdateMany).toHaveBeenCalledWith({
+      where: {
+        teamId: 42,
+        hidden: false,
+        schedulingType: SchedulingType.ROUND_ROBIN,
+        hosts: { none: {} },
+      },
+      data: { hidden: true },
+    });
+  });
+
+  it("disconnects removed members from legacy Team event assignments", async () => {
+    membershipFindFirst.mockResolvedValueOnce({ role: MembershipRole.ADMIN }).mockResolvedValueOnce({
+      id: 2,
+      userId: 9,
+      accepted: true,
+      role: MembershipRole.MEMBER,
+    });
+    eventTypeFindMany.mockResolvedValue([{ id: 21 }]);
+    eventTypeUpdate.mockResolvedValue({ id: 21 });
+    membershipDelete.mockResolvedValue({ id: 2 });
+
+    await service.removeMember({ actorId: 7, teamId: 42, membershipId: 2 });
+
+    expect(eventTypeUpdate).toHaveBeenCalledWith({
+      where: { id: 21 },
+      data: { users: { disconnect: { id: 9 } } },
+      select: { id: true },
+    });
   });
 
   it("allows an owner to transfer ownership before being demoted", async () => {
-    membershipFindFirst
-      .mockResolvedValueOnce({ role: MembershipRole.OWNER })
-      .mockResolvedValueOnce({ id: 2, role: MembershipRole.ADMIN });
+    membershipFindFirst.mockResolvedValueOnce({ role: MembershipRole.OWNER }).mockResolvedValueOnce({
+      id: 2,
+      role: MembershipRole.ADMIN,
+      user: {
+        email: "person@nuen.io",
+        emailVerified: new Date(),
+        identityProvider: IdentityProvider.GOOGLE,
+      },
+    });
     membershipUpdate.mockResolvedValue({ id: 2, role: MembershipRole.OWNER });
 
     await service.updateMemberRole({
@@ -169,9 +214,15 @@ describe("TeamService", () => {
   });
 
   it("prevents an administrator from changing owner roles", async () => {
-    membershipFindFirst
-      .mockResolvedValueOnce({ role: MembershipRole.ADMIN })
-      .mockResolvedValueOnce({ id: 2, role: MembershipRole.MEMBER });
+    membershipFindFirst.mockResolvedValueOnce({ role: MembershipRole.ADMIN }).mockResolvedValueOnce({
+      id: 2,
+      role: MembershipRole.MEMBER,
+      user: {
+        email: "person@nuen.io",
+        emailVerified: new Date(),
+        identityProvider: IdentityProvider.GOOGLE,
+      },
+    });
 
     await expect(
       service.updateMemberRole({
@@ -185,10 +236,38 @@ describe("TeamService", () => {
   });
 
   it("prevents the final owner from being demoted", async () => {
-    membershipFindFirst
-      .mockResolvedValueOnce({ role: MembershipRole.OWNER })
-      .mockResolvedValueOnce({ id: 2, role: MembershipRole.OWNER });
+    membershipFindFirst.mockResolvedValueOnce({ role: MembershipRole.OWNER }).mockResolvedValueOnce({
+      id: 2,
+      role: MembershipRole.OWNER,
+      user: {
+        email: "person@nuen.io",
+        emailVerified: new Date(),
+        identityProvider: IdentityProvider.GOOGLE,
+      },
+    });
     membershipCount.mockResolvedValue(1);
+
+    await expect(
+      service.updateMemberRole({
+        actorId: 7,
+        teamId: 42,
+        membershipId: 2,
+        role: MembershipRole.ADMIN,
+      })
+    ).rejects.toMatchObject({ code: ErrorCode.Forbidden });
+    expect(membershipUpdate).not.toHaveBeenCalled();
+  });
+
+  it("does not promote an ineligible legacy Team member", async () => {
+    membershipFindFirst.mockResolvedValueOnce({ role: MembershipRole.OWNER }).mockResolvedValueOnce({
+      id: 2,
+      role: MembershipRole.MEMBER,
+      user: {
+        email: "person@example.com",
+        emailVerified: new Date(),
+        identityProvider: IdentityProvider.GOOGLE,
+      },
+    });
 
     await expect(
       service.updateMemberRole({
@@ -209,7 +288,9 @@ describe("TeamService", () => {
           clientVersion: "test",
         })
       )
-      .mockImplementationOnce((callback: (transaction: PrismaClient) => Promise<unknown>) => callback(prisma));
+      .mockImplementationOnce((callback: (transaction: PrismaClient) => Promise<unknown>) =>
+        callback(prisma)
+      );
     teamFindFirst.mockResolvedValue(null);
     teamCreate.mockResolvedValue({ id: 42 });
 
