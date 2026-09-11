@@ -96,7 +96,7 @@ const teamProfile = {
   label: "Recruitment",
   image: "",
   membershipRole: null,
-  slug: "recruitment",
+  slug: "team/recruitment",
   permissions: { canCreateEventType: true },
 };
 
@@ -127,6 +127,16 @@ describe("CreateEventTypeDialog", () => {
 
     mocks.onSuccess?.({ id: 7, teamId: 42, title: "Intro call" });
     expect(mocks.replace).toHaveBeenCalledWith("/event-types/7?tabName=team");
+  });
+
+  it("adds the Team route prefix to an unprefixed legacy slug", () => {
+    mocks.query.teamId = teamProfile.teamId;
+
+    render(
+      <CreateEventTypeDialog profileOptions={[personalProfile, { ...teamProfile, slug: "recruitment" }]} />
+    );
+
+    expect(screen.getByTestId("page-slug")).toHaveTextContent("team/recruitment");
   });
 
   it("does not render a Team form without create permission", () => {

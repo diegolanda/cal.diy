@@ -3,6 +3,7 @@
 import type { EventTypeSetupProps, FormValues, Host } from "@calcom/features/eventtypes/lib/types";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Avatar } from "@calcom/ui/components/avatar";
+import { useRef } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
 type TeamMember = Pick<
@@ -21,13 +22,20 @@ const updateRoundRobinHosts = ({
   hosts,
   member,
   selected,
+  savedHost,
 }: {
   hosts: Host[];
   member: TeamMember;
   selected: boolean;
+  savedHost?: Host;
 }): Host[] => {
-  if (!selected) return hosts.filter((host) => host.userId !== member.id);
+  if (!selected) {
+    const isFinalSelectedHost = hosts.length === 1 && hosts[0]?.userId === member.id;
+    return isFinalSelectedHost ? hosts : hosts.filter((host) => host.userId !== member.id);
+  }
   if (hosts.some((host) => host.userId === member.id)) return hosts;
+
+  if (savedHost) return [...hosts, savedHost];
 
   return [
     ...hosts,
@@ -45,6 +53,7 @@ const updateRoundRobinHosts = ({
 const EventTeamAssignmentTab = ({ team, teamMembers }: Props) => {
   const { t } = useLocale();
   const { control } = useFormContext<FormValues>();
+  const savedHosts = useRef(new Map<number, Host>());
 
   if (!team) return null;
 
@@ -53,6 +62,9 @@ const EventTeamAssignmentTab = ({ team, teamMembers }: Props) => {
       <div className="border-subtle border-b px-6 py-5">
         <h2 className="font-semibold text-base text-emphasis">{t("round_robin_hosts")}</h2>
         <p className="mt-1 text-sm text-subtle">{t("hosts_schedule_description")}</p>
+        <p className="mt-1 text-sm text-subtle" id={`round-robin-host-requirement-${team.id}`}>
+          {t("at_least_one_round_robin_host")}
+        </p>
       </div>
 
       <Controller
@@ -66,17 +78,29 @@ const EventTeamAssignmentTab = ({ team, teamMembers }: Props) => {
             <ul className="divide-y divide-subtle px-6">
               {teamMembers.map((member) => {
                 const inputId = `round-robin-host-${team.id}-${member.id}`;
+                const isSelected = selectedHostIds.has(member.id);
+                const isFinalSelectedHost = isSelected && hosts.length === 1;
 
                 return (
                   <li key={member.id} className="flex items-center gap-3 py-4">
                     <input
-                      className="h-4 w-4 rounded-[4px] border-default bg-default checked:bg-brand-default"
+                      aria-describedby={`round-robin-host-requirement-${team.id}`}
+                      className="h-4 w-4 rounded-[4px] border-default bg-default checked:bg-brand-default disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isFinalSelectedHost}
                       id={inputId}
                       type="checkbox"
-                      checked={selectedHostIds.has(member.id)}
+                      checked={isSelected}
                       onChange={(event) => {
+                        const currentHost = hosts.find((host) => host.userId === member.id);
+                        if (currentHost) savedHosts.current.set(member.id, currentHost);
+
                         field.onChange(
-                          updateRoundRobinHosts({ hosts, member, selected: event.target.checked })
+                          updateRoundRobinHosts({
+                            hosts,
+                            member,
+                            selected: event.target.checked,
+                            savedHost: savedHosts.current.get(member.id),
+                          })
                         );
                       }}
                     />

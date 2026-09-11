@@ -16,6 +16,11 @@ import { z } from "zod";
 
 const WEBSITE_URL = process.env.NEXT_PUBLIC_WEBSITE_URL ?? "";
 
+const getTeamPageSlug = (slug: string): string => {
+  const normalizedSlug = slug.replace(/^\/+/, "");
+  return normalizedSlug.startsWith("team/") ? normalizedSlug : `team/${normalizedSlug}`;
+};
+
 // this describes the uniform data needed to create a new event type on Profile or Team
 export interface EventTypeParent {
   teamId: number | null | undefined; // if undefined, then it's a profile
@@ -137,7 +142,7 @@ export function CreateEventTypeDialog({ profileOptions }: { profileOptions: Prof
             });
           }}
           SubmitButton={SubmitButton}
-          pageSlug={`team/${teamProfile.slug}`}
+          pageSlug={getTeamPageSlug(teamProfile.slug)}
         />
       );
     }

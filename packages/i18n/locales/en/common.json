@@ -2445,6 +2445,7 @@
   "add_fixed_hosts": "Add fixed hosts",
   "round_robin_hosts": "Round-robin hosts",
   "minimum_round_robin_hosts_count": "Number of hosts required to attend",
+  "at_least_one_round_robin_host": "A round-robin event must have at least one host.",
   "hosts": "Hosts",
   "upgrade_to_enable_feature": "You need to create a team to enable this feature. Click here to create a team.",
   "orgs_upgrade_to_enable_feature": "This feature is not available in Cal.diy.",
