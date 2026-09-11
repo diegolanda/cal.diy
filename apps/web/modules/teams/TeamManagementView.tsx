@@ -85,9 +85,26 @@ function TeamCard({ membership }: { membership: TeamMembership }): ReactElement 
             event.preventDefault();
             updateTeam.mutate({ teamId: membership.team.id, name, slug, bio: bio || null });
           }}>
-          <TextField label={t("team_name")} value={name} onChange={(event) => setName(event.target.value)} />
-          <TextField label={t("team_slug")} value={slug} onChange={(event) => setSlug(event.target.value)} />
-          <TextField label={t("team_bio")} value={bio} onChange={(event) => setBio(event.target.value)} />
+          <TextField
+            name="team_name"
+            label={t("team_name")}
+            placeholder={t("your_team_name")}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+          <TextField
+            name="team_slug"
+            label={t("team_slug")}
+            placeholder={t("team_slug")}
+            value={slug}
+            onChange={(event) => setSlug(event.target.value)}
+          />
+          <TextField
+            name="team_bio"
+            label={t("team_bio")}
+            value={bio}
+            onChange={(event) => setBio(event.target.value)}
+          />
           <div className="md:col-span-3">
             <Button type="submit" loading={updateTeam.isPending} disabled={!name.trim() || !slug.trim()}>
               {t("save")}
@@ -157,6 +174,7 @@ function TeamCard({ membership }: { membership: TeamMembership }): ReactElement 
           }}>
           <TextField
             containerClassName="flex-1"
+            name="email"
             label={t("email_address")}
             type="email"
             value={email}
@@ -211,8 +229,20 @@ export default function TeamManagementView({ canCreateTeams }: { canCreateTeams:
             event.preventDefault();
             createTeam.mutate({ name, slug, bio: null });
           }}>
-          <TextField label={t("team_name")} value={name} onChange={(event) => setName(event.target.value)} />
-          <TextField label={t("team_slug")} value={slug} onChange={(event) => setSlug(event.target.value)} />
+          <TextField
+            name="team_name"
+            label={t("team_name")}
+            placeholder={t("your_team_name")}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+          <TextField
+            name="team_slug"
+            label={t("team_slug")}
+            placeholder={t("team_slug")}
+            value={slug}
+            onChange={(event) => setSlug(event.target.value)}
+          />
           <Button type="submit" loading={createTeam.isPending} disabled={!name.trim() || !slug.trim()}>
             {t("create_team")}
           </Button>
