@@ -53,7 +53,8 @@ https://cal.nuen.io/api/integrations/googlecalendar/callback
 ```
 
 Configure the Google Cloud OAuth consent screen as an Internal Workspace app. Enable the Google Calendar
-API and grant `calendar.events` and `calendar.readonly`; sign-in alone does not connect a user's calendar.
+API and grant `calendar.events` and `calendar.readonly`. Google sign-in requests these scopes and creates the
+initial Calendar and Meet records. Each user must still confirm the selected and destination calendars.
 Add `https://cal.nuen.io` as an authorized JavaScript origin.
 
 The application access policy must also enforce the exact `nuen.io` email domain on the server. Google OAuth configuration alone is not an application authorization control.
@@ -86,7 +87,7 @@ Call this authenticated endpoint:
 
 Send `Authorization: Bearer <CRON_SECRET>` on every call. Do not put the secret in the URL. The current cleanup endpoint does not delete records and must not be scheduled until its repository implementation is completed.
 
-Railway cron jobs run a service command and exit; they do not make authenticated HTTP requests automatically. Create a `task-cron` service from the same image with this configuration:
+Railway cron jobs run a service command and exit; they do not make authenticated HTTP requests automatically. Create a source-linked copy of the `web` service named `task-cron`, or publish the image and use it for both services. Railway does not share another service's private build artifact automatically. Use this configuration:
 
 - Variables: `CRON_SECRET=${{web.CRON_SECRET}}` and `WEB_PRIVATE_URL=http://${{web.RAILWAY_PRIVATE_DOMAIN}}:${{web.PORT}}`.
 - Cron schedule: `*/5 * * * *`.
@@ -135,8 +136,8 @@ Perform this once in staging, repeat it in production, and record the Team and e
 1. Have each of the three users sign in with their verified `@nuen.io` Google account so the local user exists.
 2. Have a configured system administrator create the `Recruitment`, `Billing`, and `HR` root Teams.
 3. Add the appropriate existing Workspace users to each Team. Give routine schedulers `MEMBER`; give Team maintainers `ADMIN`.
-4. In each user's **Settings > My Account > Calendars** page, connect Google Calendar. Select the calendars used for conflict checks and the destination calendar.
-5. Install Google Meet and make it the location for event types that need a video call.
+4. In each user's **Settings > My Account > Calendars** page, confirm Google Calendar is connected. Select the calendars used for conflict checks and the destination calendar.
+5. Confirm Google Meet is available and make it the location for event types that need a video call.
 6. Have a Team owner or administrator create the round-robin event, then add the participating Team members as hosts and confirm each host has usable availability.
 7. Configure and rebuild the Nuen website with these public variables:
 
