@@ -2,13 +2,14 @@
 
 import process from "node:process";
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
-import { APP_NAME, HOSTED_CAL_FEATURES, WEBAPP_URL, WEBSITE_URL } from "@calcom/lib/constants";
+import { HOSTED_CAL_FEATURES, WEBAPP_URL, WEBSITE_URL } from "@calcom/lib/constants";
 import { emailRegex } from "@calcom/lib/emailSchema";
 import { getSafeRedirectUrl } from "@calcom/lib/getSafeRedirectUrl";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Alert } from "@calcom/ui/components/alert";
 import { Icon } from "@calcom/ui/components/icon";
+import { Logo } from "@calcom/ui/components/logo/Logo";
 import { LastUsed, useLastUsed } from "@calcom/web/modules/auth/hooks/useLastUsed";
 import AddToHomescreen from "@components/AddToHomescreen";
 import BackupCode from "@components/auth/BackupCode";
@@ -180,11 +181,11 @@ export default function Login({
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center">
         {/* Main Card */}
-        <div className="w-full rounded-xl border border-subtle bg-default p-10 shadow-sm">
+        <div className="w-full rounded-xl border border-subtle bg-default p-10 shadow-card">
           {/* Logo */}
-          <div className="mb-2 text-center">
-            <h1 className="font-cal text-xl font-bold text-emphasis">{APP_NAME}</h1>
-          </div>
+          <h1 className="mb-2 flex justify-center">
+            <Logo inline={false} className="flex" />
+          </h1>
 
           {/* Heading */}
           <p className="mb-8 text-center text-sm text-subtle" data-testid="login-subtitle">

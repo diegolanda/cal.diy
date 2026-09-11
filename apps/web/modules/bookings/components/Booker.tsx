@@ -28,6 +28,7 @@ import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
 import { BookerLayouts } from "@calcom/prisma/zod-utils";
 import classNames from "@calcom/ui/classNames";
 import { DialogContent } from "@calcom/ui/components/dialog";
+import { Logo } from "@calcom/ui/components/logo/Logo";
 import { UnpublishedEntity } from "@calcom/ui/components/unpublished-entity";
 import TurnstileCaptcha from "@calcom/web/modules/auth/components/Turnstile";
 import { useSkipConfirmStep } from "@calcom/web/modules/bookings/hooks/useSkipConfirmStep";
@@ -352,7 +353,7 @@ const BookerComponent = ({
             `bg-default dark:bg-cal-muted grid max-w-full items-start dark:scheme-dark sm:transition-[width] sm:duration-300 sm:motion-reduce:transition-none md:flex-row`,
             // We remove border only when the content covers entire viewport. Because in embed, it can almost never be the case that it covers entire viewport, we show the border there
             (layout === BookerLayouts.MONTH_VIEW || isEmbed) && "border-subtle rounded-md",
-            !isEmbed && "sm:transition-[width] sm:duration-300",
+            !isEmbed && "shadow-card sm:transition-[width] sm:duration-300",
             isEmbed && layout === BookerLayouts.MONTH_VIEW && "border-booker sm:border-booker-width",
             !isEmbed && layout === BookerLayouts.MONTH_VIEW && `border-subtle border`,
             `${customClassNames?.bookerContainer}`
@@ -553,15 +554,14 @@ const BookerComponent = ({
         )}
 
         {!hideBranding && (!isPlatform || isPlatformBookerEmbed) && !shouldRenderCaptcha && (
-          <m.span
+          <m.div
             key="logo"
             className={classNames(
-              "mb-6 mt-auto pt-6 [&_img]:h-[15px]",
-              hasDarkBackground ? "dark" : "",
-              layout === BookerLayouts.MONTH_VIEW ? "block" : "hidden"
+              "mb-6 mt-auto flex justify-center pt-6 [&_img]:h-[15px]",
+              hasDarkBackground ? "dark" : ""
             )}>
-            {null}
-          </m.span>
+            <Logo small inline={false} />
+          </m.div>
         )}
       </div>
       <>

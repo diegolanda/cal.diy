@@ -7,7 +7,7 @@ import { Avatar } from "@calcom/ui/components/avatar";
 import { Credits } from "@calcom/ui/components/credits";
 import { ButtonOrLink } from "@calcom/ui/components/dropdown";
 import { Icon } from "@calcom/ui/components/icon";
-import { Logo } from "@calcom/ui/components/logo";
+import { Logo } from "@calcom/ui/components/logo/Logo";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
 import { Tooltip } from "@calcom/ui/components/tooltip";
 import { ArrowLeftIcon, ArrowRightIcon } from "@coss/ui/icons";
@@ -64,6 +64,9 @@ export function SideBar({ bannersHeight, user }: SideBarProps) {
           "max-h-screen"
         )}>
         <div className="flex h-full flex-col justify-between py-3 lg:pt-4">
+          <Link href="/event-types" className="mb-4 hidden px-1.5 lg:block" aria-label="Nuen scheduling">
+            <Logo small inline={false} />
+          </Link>
           <header className="todesktop:-mt-3 todesktop:flex-col-reverse items-center justify-between todesktop:[-webkit-app-region:drag] md:hidden lg:flex">
             {user?.org ? (
               !ENABLE_PROFILE_SWITCHER ? (

@@ -36,6 +36,7 @@ import "@calcom/web/modules/auth/components/Turnstile";
 
 import { render, screen } from "@calcom/features/bookings/Booker/__tests__/test-utils";
 import type { BookerProps } from "@calcom/features/bookings/Booker/types";
+import { BookerLayouts } from "@calcom/prisma/zod-utils";
 import type { WrappedBookerProps } from "../types";
 import { Booker } from "./Booker";
 
@@ -219,6 +220,34 @@ describe("Booker", () => {
       },
     });
     expect(screen.getByTestId("dry-run-message")).toBeInTheDocument();
+  });
+
+  it.each(Object.values(BookerLayouts))("shows the Nuen wordmark in the %s public layout", (layout) => {
+    const props = {
+      ...defaultProps,
+      bookerLayout: { ...defaultProps.bookerLayout, layout },
+    };
+
+    render(<Booker {...(props as unknown as BookerProps & WrappedBookerProps)} />, {
+      mockStore: { state: "selecting_time", selectedDate: "2024-01-01" },
+    });
+
+    const logo = screen.getByRole("img", { name: "Nuen" });
+    expect(logo.querySelector('img[src="/api/logo"]')).toBeInTheDocument();
+    expect(logo.parentElement).not.toHaveClass("hidden");
+  });
+
+  it("does not show the Nuen wordmark when branding is hidden", () => {
+    render(
+      <Booker
+        {...({ ...defaultProps, hideBranding: true } as unknown as BookerProps & WrappedBookerProps)}
+      />,
+      {
+        mockStore: { state: "selecting_time", selectedDate: "2024-01-01" },
+      }
+    );
+
+    expect(screen.queryByRole("img", { name: "Nuen" })).not.toBeInTheDocument();
   });
 
   it("should invalidate schedule when cancelling booking form", () => {
