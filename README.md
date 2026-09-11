@@ -571,8 +571,8 @@ These variables must also be provided at runtime
 | DATABASE_URL | database url with credentials - if using a connection pooler, this setting should point there | required | `postgresql://unicorn_user:magical_password@database:5432/calendso` |
 | NEXT_PUBLIC_WEBAPP_URL | Base URL of the site. NOTE: if this value differs from the value used at build-time, there will be a slight delay during container start (to update the statically built files). | optional | `http://localhost:3000` |
 | NEXTAUTH_URL | Location of the auth server. By default, this is the Cal.diy docker instance itself. | optional | `{NEXT_PUBLIC_WEBAPP_URL}/api/auth` |
-| NEXTAUTH_SECRET | Cookie encryption key. Must match build variable. Generate with: `openssl rand -base64 32` | required | `secret` |
-| CALENDSO_ENCRYPTION_KEY | Authentication encryption key (32 bytes for AES256). Must match build variable. Generate with: `openssl rand -base64 24` | required | `secret` |
+| NEXTAUTH_SECRET | Cookie encryption key. Generate with: `openssl rand -base64 32` | required | `secret` |
+| CALENDSO_ENCRYPTION_KEY | Authentication encryption key (32 bytes for AES256). Generate with: `openssl rand -base64 24` | required | `secret` |
 
 ##### Build-time variables
 
@@ -580,11 +580,9 @@ If building the image yourself, these variables must be provided at the time of 
 
 | Variable | Description | Required | Default |
 | --- | --- | --- | --- |
-| DATABASE_URL | database url with credentials - if using a connection pooler, this setting should point there | required | `postgresql://unicorn_user:magical_password@database:5432/calendso` |
 | MAX_OLD_SPACE_SIZE | Needed for Nodejs/NPM build options | required | 4096 |
-| NEXTAUTH_SECRET | Cookie encryption key | required | `secret` |
-| CALENDSO_ENCRYPTION_KEY | Authentication encryption key | required | `secret` |
 | NEXT_PUBLIC_WEBAPP_URL | Base URL injected into static files | optional | `http://localhost:3000` |
+| NEXT_PUBLIC_WEBSITE_URL | Base URL used for public booking links | optional | `NEXT_PUBLIC_WEBAPP_URL` |
 | NEXT_PUBLIC_WEBSITE_TERMS_URL | custom URL for terms and conditions website | optional | |
 | NEXT_PUBLIC_WEBSITE_PRIVACY_POLICY_URL | custom URL for privacy policy website | optional | |
 | CALCOM_TELEMETRY_DISABLED | Allow Cal.diy to collect anonymous usage data (set to `1` to disable) | optional | |

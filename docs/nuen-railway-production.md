@@ -1,12 +1,12 @@
 # Nuen Railway production runbook
 
-This runbook defines the small production deployment for Nuen. It uses one web service and one PostgreSQL service.
+This runbook defines the small production deployment for Nuen. It requires one web service and one PostgreSQL service.
 
 ## Services and domains
 
 Create these services in one Railway project and environment:
 
-- `web`: Build the repository root with `Dockerfile`. Expose it through `cal.nuen.io` on port `3000`.
+- `web`: Build the repository root with `Dockerfile`. Add the `cal.nuen.io` custom domain. Railway supplies the listening port.
 - `Postgres`: Use Railway PostgreSQL. Keep it on Railway's private network without a public domain.
 
 Start with one `web` replica. The database is the shared source of truth, so a second replica can be added later
@@ -15,7 +15,14 @@ without changing the application architecture. Keep at least one previous succes
 Set the `web` health check path to `/api/health`. A healthy response is HTTP 200 with `{"status":"ok"}`. A database failure returns HTTP 503 without an error message or connection detail.
 Set `RAILWAY_HEALTHCHECK_TIMEOUT_SEC=600` on the `web` service so database migrations can finish before Railway stops the deployment.
 
-Use separate Railway environments for staging and production. Give each environment separate Google, email, and encryption credentials.
+Use one Railway environment named `production`. Validate the deployment before you route public traffic to it.
+
+Paste `deploy/railway-production.env.example` into the `web` service Raw Editor. Replace every
+`REPLACE_WITH_*` value before you deploy. Seal the three generated secrets, the Google OAuth JSON, and the
+Resend API key after you save them.
+
+The Docker build uses fixed, non-secret placeholders for server-only values. Railway supplies the real database
+and secret variables only to the running container. Do not add these server-only variables as Docker build arguments.
 
 ## Required web variables
 
@@ -26,9 +33,9 @@ Set these variables on the `web` service. Store generated values and provider cr
 | `DATABASE_URL` | Reference `Postgres.DATABASE_URL`. |
 | `DATABASE_DIRECT_URL` | Use the same private database URL while no pooler is present. |
 | `DATABASE_HOST` | `${{Postgres.PGHOST}}:${{Postgres.PGPORT}}`. The startup check requires both values. |
-| `PORT` | `3000` |
 | `NEXT_PUBLIC_WEBAPP_URL` | `https://cal.nuen.io` |
 | `NEXTAUTH_URL` | `https://cal.nuen.io` |
+| `NEXT_PUBLIC_WEBSITE_URL` | `https://cal.nuen.io`; Cal booking URLs use this value. The Nuen landing page links to explicit booking URLs. |
 | `NEXTAUTH_SECRET` | Generate a unique secret with `openssl rand -base64 32`. |
 | `CALENDSO_ENCRYPTION_KEY` | Generate the required 32-character value with `openssl rand -base64 24`. |
 | `GOOGLE_LOGIN_ENABLED` | `true` |
@@ -44,12 +51,14 @@ Set these variables on the `web` service. Store generated values and provider cr
 | `CRON_SECRET` | Generate a separate random secret for scheduled endpoint calls. |
 | `RAILWAY_HEALTHCHECK_TIMEOUT_SEC` | `600`. Allow startup migrations to finish before the deployment health check times out. |
 | `CALCOM_TELEMETRY_DISABLED` | `1` |
+| `CSP_POLICY` | `non-strict`; this is the supported production CSP mode. Do not use `strict`. |
 
-The Google OAuth client must allow both redirect URIs:
+The Google OAuth client must allow both redirect URIs. Keep the Calendar callback first in the
+`redirect_uris` array because the Calendar integration uses the first value:
 
 ```text
-https://cal.nuen.io/api/auth/callback/google
 https://cal.nuen.io/api/integrations/googlecalendar/callback
+https://cal.nuen.io/api/auth/callback/google
 ```
 
 Configure the Google Cloud OAuth consent screen as an Internal Workspace app. Enable the Google Calendar
@@ -69,15 +78,44 @@ Set these variables before the Docker build. Railway rebuilds the image when a s
 | --- | --- |
 | `NEXT_PUBLIC_APP_NAME` | `Nuen Calendar` |
 | `NEXT_PUBLIC_COMPANY_NAME` | `Nuen` |
+| `NEXT_PUBLIC_WEBSITE_URL` | `https://cal.nuen.io` |
 | `NEXT_PUBLIC_SUPPORT_MAIL_ADDRESS` | A monitored `@nuen.io` support address. |
 | `NEXT_PUBLIC_EMBED_LIB_URL` | `https://cal.nuen.io/embed/embed.js` |
+| `NEXT_PUBLIC_WEBSITE_PRIVACY_POLICY_URL` | `https://www.nuen.io/privacy` |
+| `NEXT_PUBLIC_WEBSITE_TERMS_URL` | The published Nuen terms URL. Do not leave the placeholder in production. |
+| `NEXT_PUBLIC_LICENSE_CONSENT` | `agree` |
 | `EMAIL_FROM_NAME` | `Nuen` |
 
 These values change product names, support links, email sender names, and the embed origin. This branch also includes the Nuen logo, browser icons, colors, and typography defaults.
 
+## Values you must supply
+
+Replace these placeholders before the first deployment:
+
+| Placeholder | Required value |
+| --- | --- |
+| `REPLACE_WITH_MONITORED_SUPPORT_ADDRESS@nuen.io` | A monitored support mailbox. |
+| `REPLACE_WITH_NUEN_TERMS_URL` | The published Nuen terms URL. The website currently provides `/privacy` but no `/terms` route. |
+| `REPLACE_WITH_GOOGLE_CLIENT_ID` | The client ID from the Internal Google Workspace OAuth web client. |
+| `REPLACE_WITH_GOOGLE_CLIENT_SECRET` | The client secret from the same OAuth client. |
+| `REPLACE_WITH_ADMIN_ADDRESS@nuen.io` | One or more comma-separated Nuen administrator addresses. |
+| `REPLACE_WITH_RESEND_API_KEY` | A restricted key for the verified Nuen sending domain. |
+| `REPLACE_WITH_VERIFIED_SENDER@nuen.io` | The verified transactional sender address. |
+
+Generate the three remaining values once:
+
+```sh
+openssl rand -base64 32 # NEXTAUTH_SECRET
+openssl rand -base64 24 # CALENDSO_ENCRYPTION_KEY: exactly 32 characters
+openssl rand -hex 32    # CRON_SECRET
+```
+
+Store each output as a separate sealed Railway variable. Keep a secure recovery copy of
+`CALENDSO_ENCRYPTION_KEY`. Changing that key after users connect calendars makes the stored credentials unreadable.
+
 ## Scheduled work
 
-The base booking flow does not need a separate long-running worker. Add a scheduler when delayed tasks or reminders are enabled.
+The base booking flow does not need a separate long-running worker. The `task-cron` service is optional. Add it when delayed tasks or reminders are enabled.
 
 Call this authenticated endpoint:
 
@@ -99,7 +137,7 @@ Do not enable the calendar-subscription or delegation cron routes for this initi
 
 ## Backups and recovery
 
-Configure these controls on the PostgreSQL service:
+Configure these controls on the PostgreSQL service. The external backup job is optional until its storage provider is configured:
 
 1. Enable daily and weekly Railway volume backups.
 2. Enable point-in-time recovery, wait for its first base backup, and record the displayed restore window. If the selected plan does not provide it, record that exception and the accepted recovery-point objective before launch.
@@ -114,11 +152,11 @@ Configure these controls on the PostgreSQL service:
    ```
 
 6. Apply an object-storage lifecycle that retains 4 weekly and 12 monthly backups.
-7. Download and restore one backup into an isolated staging database each month:
+7. Download and restore one backup into a temporary, isolated PostgreSQL service each month:
 
    ```sh
    openssl enc -d -aes-256-cbc -pbkdf2 -in cal.dump.enc -out cal.dump -pass env:BACKUP_ENCRYPTION_PASSWORD
-   pg_restore --clean --if-exists --no-owner --dbname="$STAGING_DATABASE_URL" cal.dump
+   pg_restore --clean --if-exists --no-owner --dbname="$RESTORE_DATABASE_URL" cal.dump
    ```
 
 8. Record the restore duration and the restored booking count.
@@ -131,7 +169,7 @@ Removing an address from `GOOGLE_WORKSPACE_ADMIN_EMAILS` does not demote an exis
 
 ## Initial Nuen setup
 
-Perform this once in staging, repeat it in production, and record the Team and event URLs:
+Perform this once in production before you route public traffic to it. Record the Team and event URLs:
 
 1. Have each of the three users sign in with their verified `@nuen.io` Google account so the local user exists.
 2. Have a configured system administrator create the `Recruitment`, `Billing`, and `HR` root Teams.
@@ -152,10 +190,10 @@ Perform this once in staging, repeat it in production, and record the Team and e
 
 ## Release checks
 
-Complete these checks in staging before production traffic starts:
+Complete these checks in production before you route public traffic to it:
 
 1. Confirm that `/api/health` returns HTTP 200.
-2. Confirm that a stopped or unreachable staging database makes `/api/health` return HTTP 503.
+2. During the initial maintenance window, confirm that an unreachable database makes `/api/health` return HTTP 503.
 3. Sign in with all three Nuen Workspace accounts.
 4. Confirm that a non-`nuen.io` account cannot enter the dashboard.
 5. Create, reschedule, and cancel a personal booking.
