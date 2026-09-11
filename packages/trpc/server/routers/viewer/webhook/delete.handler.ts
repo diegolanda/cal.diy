@@ -1,8 +1,6 @@
 import { updateTriggerForExistingBookings } from "@calcom/features/webhooks/lib/scheduleTrigger";
 import { prisma } from "@calcom/prisma";
-import type { Prisma } from "@calcom/prisma/client";
 import type { TrpcSessionUser } from "@calcom/trpc/server/types";
-
 import type { TDeleteInputSchema } from "./delete.schema";
 
 type DeleteOptions = {
@@ -12,23 +10,11 @@ type DeleteOptions = {
   input: TDeleteInputSchema;
 };
 
-export const deleteHandler = async ({ ctx, input }: DeleteOptions) => {
+export const deleteHandler = async ({ ctx: _ctx, input }: DeleteOptions) => {
   const { id } = input;
 
-  const where: Prisma.WebhookWhereInput = { AND: [{ id: id }] };
-
-  if (Array.isArray(where.AND)) {
-    if (input.eventTypeId) {
-      where.AND.push({ eventTypeId: input.eventTypeId });
-    } else if (ctx.user.role === "ADMIN") {
-      where.AND.push({ OR: [{ platform: true }, { userId: ctx.user.id }] });
-    } else {
-      where.AND.push({ userId: ctx.user.id });
-    }
-  }
-
   const webhookToDelete = await prisma.webhook.findFirst({
-    where,
+    where: { id },
   });
 
   if (webhookToDelete) {

@@ -17,6 +17,7 @@ export const listHandler = async ({ ctx, input }: ListOptions): Promise<Webhook[
     userId: ctx.user.id,
     appId: input?.appId,
     eventTypeId: input?.eventTypeId,
+    teamId: input?.teamId,
     eventTriggers: input?.eventTriggers,
   });
 };

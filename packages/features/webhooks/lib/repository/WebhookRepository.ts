@@ -508,7 +508,7 @@ export class WebhookRepository implements IWebhookRepository {
    * - Permission-based team filtering
    */
   async listWebhooks(options: ListWebhooksOptions): Promise<Webhook[]> {
-    const { userId, appId, eventTypeId, eventTriggers } = options;
+    const { userId, appId, eventTypeId, teamId, eventTriggers } = options;
 
     // Build WHERE conditions
     const whereConditions: NonNullable<Prisma.WebhookWhereInput["AND"]> = [
@@ -516,21 +516,36 @@ export class WebhookRepository implements IWebhookRepository {
       { appId: appId ?? null },
     ];
 
-    const user = await this.userRepository.findUserTeams(userId);
+    if (teamId !== undefined && teamId !== null) {
+      whereConditions.push({ teamId });
+    }
 
     if (eventTypeId) {
       const managedParentId = await this.eventTypeRepository.findParentEventTypeId(eventTypeId);
 
       if (managedParentId) {
-        // Include webhooks from both the event type and its parent (if active)
+        const parentEventType = await this.prisma.eventType.findUnique({
+          where: { id: managedParentId },
+          select: { userId: true, teamId: true },
+        });
+        const canReadParent = parentEventType?.teamId
+          ? await new TeamPermissionService(this.prisma).checkPermission({
+              userId,
+              teamId: parentEventType.teamId,
+              permission: "webhook.read",
+              fallbackRoles: [MembershipRole.ADMIN, MembershipRole.OWNER],
+            })
+          : parentEventType?.userId === userId;
+
         whereConditions.push({
-          OR: [{ eventTypeId }, { eventTypeId: managedParentId, active: true }],
+          OR: [{ eventTypeId }, ...(canReadParent ? [{ eventTypeId: managedParentId, active: true }] : [])],
         });
       } else {
         whereConditions.push({ eventTypeId });
       }
-    } else {
+    } else if (teamId === undefined || teamId === null) {
       // No eventTypeId - filter by user and their allowed teams
+      const user = await this.userRepository.findUserTeams(userId);
       const permissionService = new TeamPermissionService(this.prisma);
       const teamIds = user?.teams?.map((m) => m.teamId) ?? [];
 

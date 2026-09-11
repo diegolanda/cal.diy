@@ -68,6 +68,26 @@ describe("authorizeWebhookAccess", () => {
     await expect(result).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("allows an authorized administrator to delete a Team webhook", async () => {
+    mocks.findWebhook.mockResolvedValue({
+      id: "webhook-1",
+      userId: 99,
+      teamId: 20,
+      eventTypeId: null,
+      platform: false,
+    });
+    mocks.checkPermission.mockResolvedValue(true);
+
+    await expect(
+      authorizeWebhookAccess({ user, input: { id: "webhook-1" }, permission: "webhook.delete" })
+    ).resolves.toBeUndefined();
+    expect(mocks.checkPermission).toHaveBeenCalledWith({
+      userId: 10,
+      teamId: 20,
+      permission: "webhook.delete",
+    });
+  });
+
   it("denies access to another user's personal webhook", async () => {
     mocks.findWebhook.mockResolvedValue({
       id: "webhook-1",

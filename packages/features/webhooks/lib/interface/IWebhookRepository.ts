@@ -50,6 +50,7 @@ export interface ListWebhooksOptions {
   userId: number;
   appId?: string | null;
   eventTypeId?: number | null;
+  teamId?: number | null;
   eventTriggers?: WebhookTriggerEvents[];
 }
 

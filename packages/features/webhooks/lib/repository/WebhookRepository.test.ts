@@ -82,4 +82,50 @@ describe("WebhookRepository team permissions", () => {
       fallbackRoles: ["ADMIN", "OWNER"],
     });
   });
+
+  it("does not include a managed parent webhook without parent Team permission", async () => {
+    mocks.checkPermission.mockResolvedValue(false);
+    const findMany = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      eventType: {
+        findUnique: vi.fn().mockResolvedValue({ userId: null, teamId: 20 }),
+      },
+      webhook: { findMany },
+    } as unknown as PrismaClient;
+    const eventTypeRepository = {
+      findParentEventTypeId: vi.fn().mockResolvedValue(40),
+    } as unknown as IEventTypesRepository;
+    const repository = new WebhookRepository(prisma, eventTypeRepository, {} as unknown as IUsersRepository);
+
+    await repository.listWebhooks({ userId: 10, eventTypeId: 30 });
+
+    expect(mocks.checkPermission).toHaveBeenCalledWith({
+      userId: 10,
+      teamId: 20,
+      permission: "webhook.read",
+      fallbackRoles: ["ADMIN", "OWNER"],
+    });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { AND: [{ appId: null }, { OR: [{ eventTypeId: 30 }] }] },
+      })
+    );
+  });
+
+  it("restricts a Team-scoped list to the requested Team", async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const findUserTeams = vi.fn();
+    const repository = new WebhookRepository(
+      { webhook: { findMany } } as unknown as PrismaClient,
+      {} as unknown as IEventTypesRepository,
+      { findUserTeams } as unknown as IUsersRepository
+    );
+
+    await repository.listWebhooks({ userId: 10, teamId: 20 });
+
+    expect(findUserTeams).not.toHaveBeenCalled();
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { AND: [{ appId: null }, { teamId: 20 }] } })
+    );
+  });
 });
