@@ -1,4 +1,4 @@
-import { IdentityProvider } from "@calcom/prisma/enums";
+import { IdentityProvider, MembershipRole } from "@calcom/prisma/enums";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrpcSessionUser } from "../../../types";
 
@@ -48,8 +48,8 @@ vi.mock("@calcom/features/users/repositories/UserRepository", () => ({
   UserRepository: MockUserRepository,
 }));
 
-vi.mock("@calcom/features/pbac/services/permission-check.service", () => ({
-  PermissionCheckService: MockPermissionCheckService,
+vi.mock("@calcom/features/membership/services/TeamPermissionService", () => ({
+  TeamPermissionService: MockPermissionCheckService,
 }));
 
 vi.mock("@calcom/lib/getAvatarUrl", () => ({
@@ -154,6 +154,19 @@ describe("getHandler - identity provider email lookup", () => {
       })
     );
     expect(result.identityProviderEmail).toBe("azure@example.com");
+  });
+
+  it("reports Team update capability from explicit Team permissions", async () => {
+    mockGetTeamIdsWithPermission.mockResolvedValue([100]);
+
+    const result = await getHandler({ ctx: createCtx(), input: {} });
+
+    expect(result.canUpdateTeams).toBe(true);
+    expect(mockGetTeamIdsWithPermission).toHaveBeenCalledWith({
+      userId: 1,
+      permission: "team.update",
+      fallbackRoles: [MembershipRole.ADMIN, MembershipRole.OWNER],
+    });
   });
 
   it("maps GOOGLE identity provider to 'google' in account lookup", async () => {

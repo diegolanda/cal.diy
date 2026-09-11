@@ -9,6 +9,25 @@ vi.mock("@calcom/lib/checkRateLimitAndThrowError", () => ({
   checkRateLimitAndThrowError: vi.fn(),
 }));
 
+const { mockCheckTeamPermission, mockTeamPermissionClient, MockTeamPermissionService } = vi.hoisted(() => {
+  const mockCheckTeamPermission = vi.fn();
+  const mockTeamPermissionClient = vi.fn();
+
+  class MockTeamPermissionService {
+    constructor(prismaClient: unknown) {
+      mockTeamPermissionClient(prismaClient);
+    }
+
+    checkPermission = (...args: unknown[]) => mockCheckTeamPermission(...args);
+  }
+
+  return { mockCheckTeamPermission, mockTeamPermissionClient, MockTeamPermissionService };
+});
+
+vi.mock("@calcom/features/membership/services/TeamPermissionService", () => ({
+  TeamPermissionService: MockTeamPermissionService,
+}));
+
 const { mockFindAllByUpIdIncludeTeam, MockMembershipRepository } = vi.hoisted(() => {
   const mockFindAllByUpIdIncludeTeam = vi.fn();
   const mockFindUniqueByUserIdAndTeamId = vi.fn();
@@ -79,6 +98,7 @@ describe("getUserEventGroups", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckTeamPermission.mockResolvedValue(true);
   });
 
   describe("Basic functionality", () => {
@@ -171,7 +191,7 @@ describe("getUserEventGroups", () => {
   });
 
   describe("Permissions", () => {
-    it("should grant permissions for team members (stub always returns true)", async () => {
+    it("uses the Team permission service for event type creation", async () => {
       const { ProfileRepository } = await import("@calcom/features/profile/repositories/ProfileRepository");
 
       const mockTeamMembership = {
@@ -211,6 +231,13 @@ describe("getUserEventGroups", () => {
 
       expect(result.teamPermissions[100]).toMatchObject({
         canCreateEventType: true,
+      });
+      expect(mockTeamPermissionClient).toHaveBeenCalledWith(mockCtx.prisma);
+      expect(mockCheckTeamPermission).toHaveBeenCalledWith({
+        userId: 1,
+        teamId: 100,
+        permission: "eventType.create",
+        fallbackRoles: [MembershipRole.OWNER, MembershipRole.ADMIN],
       });
     });
   });

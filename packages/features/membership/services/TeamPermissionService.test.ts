@@ -96,6 +96,29 @@ describe("TeamPermissionService", () => {
     expect(mocks.findFirst).not.toHaveBeenCalled();
   });
 
+  it("allows only owners and administrators to update teams", async () => {
+    mocks.findFirst.mockResolvedValue({ id: 1 });
+    const service = new TeamPermissionService();
+
+    await expect(
+      service.checkPermission({
+        userId: 10,
+        teamId: 20,
+        permission: "team.update",
+        fallbackRoles: [MembershipRole.ADMIN],
+      })
+    ).resolves.toBe(true);
+    await expect(
+      service.checkPermission({
+        userId: 10,
+        teamId: 20,
+        permission: "team.update",
+        fallbackRoles: [MembershipRole.MEMBER],
+      })
+    ).resolves.toBe(false);
+    expect(mocks.findFirst).toHaveBeenCalledTimes(1);
+  });
+
   it("returns only root non-organization team ids", async () => {
     mocks.findMany.mockResolvedValue([{ teamId: 20 }, { teamId: 30 }]);
 
