@@ -36,10 +36,20 @@ type CreateOptions = {
   input: TCreateInputSchema;
 };
 
+export const getInitialEventTypeHidden = ({
+  hidden,
+  teamId,
+  schedulingType,
+}: Pick<TCreateInputSchema, "hidden" | "teamId" | "schedulingType">): boolean | undefined => {
+  if (teamId && schedulingType === SchedulingType.ROUND_ROBIN) return true;
+  return hidden;
+};
+
 export const createHandler = async ({ ctx, input }: CreateOptions) => {
   const {
     schedulingType,
     teamId,
+    hidden,
     metadata,
     locations: inputLocations,
     scheduleId,
@@ -71,6 +81,7 @@ export const createHandler = async ({ ctx, input }: CreateOptions) => {
 
   const data: Prisma.EventTypeCreateInput = {
     ...rest,
+    hidden: getInitialEventTypeHidden({ hidden, teamId, schedulingType }),
     owner: teamId ? undefined : { connect: { id: userId } },
     metadata: (metadata as Prisma.InputJsonObject) ?? undefined,
     // Only connecting the current user for non-managed event types and non team event types

@@ -617,6 +617,53 @@ describe("createEventPbacProcedure", () => {
         })
       ).resolves.not.toThrow();
     });
+
+    it("denies publishing a round robin Team event without a host", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue({
+        ...roundRobinEvent,
+        hidden: true,
+        hosts: [],
+      });
+
+      const middleware = getMiddleware(createEventPbacProcedure("eventType.update"));
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 2, hidden: false },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "An active round-robin Team event must have at least one host",
+      });
+    });
+
+    it("allows publishing a round robin Team event with an accepted Team host", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue({
+        ...roundRobinEvent,
+        hidden: true,
+        hosts: [],
+      });
+
+      const middleware = getMiddleware(createEventPbacProcedure("eventType.update"));
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 2, hidden: false, hosts: [{ userId: 1 }] },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).resolves.not.toThrow();
+    });
   });
 
   describe("event not found", () => {
