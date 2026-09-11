@@ -72,9 +72,7 @@ function TeamCard({ membership }: { membership: TeamMembership }): ReactElement 
         <div>
           <h2 className="text-emphasis text-lg font-semibold">{membership.team.name}</h2>
           {membership.team.slug && (
-            <a className="text-subtle text-sm hover:underline" href={`/team/${membership.team.slug}`}>
-              /team/{membership.team.slug}
-            </a>
+            <p className="text-subtle text-sm">/team/{membership.team.slug}</p>
           )}
         </div>
         <span className="bg-muted text-subtle rounded-full px-3 py-1 text-xs font-medium">
