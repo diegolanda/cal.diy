@@ -254,14 +254,9 @@ describe("Booker", () => {
     expect(logo.parentElement).not.toHaveClass("hidden");
   });
 
-  it.each(
-    ["hiring-call", "recruiter-intro"].flatMap((eventSlug) =>
-      Object.values(BookerLayouts).map((layout) => ({ eventSlug, layout }))
-    )
-  )("shows the Nuen campaign for $eventSlug in the $layout public layout", ({ eventSlug, layout }) => {
+  it.each(Object.values(BookerLayouts))("shows the Nuen campaign in the %s public layout", (layout) => {
     const props = {
       ...defaultProps,
-      eventSlug,
       bookerLayout: { ...defaultProps.bookerLayout, layout },
     };
 
@@ -292,12 +287,12 @@ describe("Booker", () => {
     expect(screen.queryByTestId("nuen-booking-promo")).not.toBeInTheDocument();
   });
 
-  it("does not show the Nuen campaign on non-promotional event pages", () => {
+  it("shows the Nuen campaign on every direct public event page", () => {
     render(<Booker {...(defaultProps as unknown as BookerProps & WrappedBookerProps)} />, {
       mockStore: { state: "selecting_time", selectedDate: "2024-01-01" },
     });
 
-    expect(screen.queryByTestId("nuen-booking-promo")).not.toBeInTheDocument();
+    expect(screen.getByTestId("nuen-booking-promo")).toBeInTheDocument();
   });
 
   it("does not show the Nuen campaign on platform or reschedule pages", () => {

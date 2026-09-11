@@ -1,5 +1,5 @@
 import { useRouterQuery } from "@calcom/lib/hooks/useRouterQuery";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, vi } from "vitest";
 import UserPage from "./users-public-view";
 
@@ -9,6 +9,23 @@ vi.mock("@calcom/lib/constants", async () => {
 
 vi.mock("@calcom/lib/hooks/useRouterQuery", () => ({
   useRouterQuery: vi.fn(),
+}));
+
+vi.mock("@calcom/embed-core/embed-iframe", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@calcom/embed-core/embed-iframe")>()),
+  useIsEmbed: (isEmbed?: boolean) => Boolean(isEmbed),
+}));
+
+vi.mock("@calcom/lib/hooks/useLocale", () => ({
+  useLocale: () => ({
+    t: (key: string) =>
+      ({
+        nuen_booking_promo_description:
+          "Start with one engineer at 10–20 hours a week. You see the rate, 75% of it goes to the engineer, and you scale only when the fit is real.",
+        nuen_booking_promo_headline_accent: "engineers without the agency markup.",
+        nuen_booking_promo_headline_lead: "Hire senior LATAM",
+      })[key] ?? key,
+  }),
 }));
 
 function mockedUserPageComponentProps(props: Partial<React.ComponentProps<typeof UserPage>>) {
@@ -54,7 +71,10 @@ function mockedUserPageComponentProps(props: Partial<React.ComponentProps<typeof
       ...(props.entity ?? null),
     },
     eventTypes: [],
+    isBrandingHidden: props.isBrandingHidden ?? false,
     isOrgSEOIndexable: false,
+    isEmbed: props.isEmbed ?? false,
+    isPlatformProfile: props.isPlatformProfile ?? false,
   } satisfies React.ComponentProps<typeof UserPage>;
 }
 
@@ -74,5 +94,41 @@ describe("UserPage Component", () => {
     });
 
     expect(() => render(<UserPage {...mockData.props} />)).not.toThrow();
+  });
+
+  it("shows the Nuen campaign on direct public profile pages", () => {
+    const props = mockedUserPageComponentProps({ isEmbed: false });
+
+    render(<UserPage {...props} />);
+
+    expect(screen.getByTestId("nuen-booking-promo")).toBeInTheDocument();
+    expect(screen.getByTestId("nuen-booking-promo").parentElement).toHaveClass("nuen-booking-background");
+    expect(screen.getByTestId("nuen-booking-promo-headline")).toHaveTextContent(
+      "Hire senior LATAM engineers without the agency markup."
+    );
+  });
+
+  it("does not show the Nuen campaign on embedded profile pages", () => {
+    const props = mockedUserPageComponentProps({ isEmbed: true });
+
+    render(<UserPage {...props} />);
+
+    expect(screen.queryByTestId("nuen-booking-promo")).not.toBeInTheDocument();
+  });
+
+  it("does not show the Nuen campaign when branding is hidden", () => {
+    const props = mockedUserPageComponentProps({ isBrandingHidden: true });
+
+    render(<UserPage {...props} />);
+
+    expect(screen.queryByTestId("nuen-booking-promo")).not.toBeInTheDocument();
+  });
+
+  it("does not show the Nuen campaign on platform profiles", () => {
+    const props = mockedUserPageComponentProps({ isPlatformProfile: true });
+
+    render(<UserPage {...props} />);
+
+    expect(screen.queryByTestId("nuen-booking-promo")).not.toBeInTheDocument();
   });
 });

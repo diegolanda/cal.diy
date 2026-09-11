@@ -25,12 +25,12 @@ import {
   PUBLIC_INVALIDATE_AVAILABLE_SLOTS_ON_BOOKING_FORM,
 } from "@calcom/lib/constants";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
-import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { BookerLayouts } from "@calcom/prisma/zod-utils";
 import classNames from "@calcom/ui/classNames";
 import { DialogContent } from "@calcom/ui/components/dialog";
 import { Logo } from "@calcom/ui/components/logo/Logo";
 import { UnpublishedEntity } from "@calcom/ui/components/unpublished-entity";
+import { NuenBookingPromo } from "@calcom/web/components/nuen/NuenBookingPromo";
 import TurnstileCaptcha from "@calcom/web/modules/auth/components/Turnstile";
 import { useSkipConfirmStep } from "@calcom/web/modules/bookings/hooks/useSkipConfirmStep";
 import { useNonEmptyScheduleDays } from "@calcom/web/modules/schedules/hooks/useNonEmptyScheduleDays";
@@ -53,31 +53,6 @@ import { OverlayCalendar } from "./OverlayCalendar/OverlayCalendar";
 import { SlotSelectionModalHeader } from "./SlotSelectionModalHeader";
 import { NotFound } from "./Unavailable";
 import { VerifyCodeDialog } from "./VerifyCodeDialog";
-
-const NUEN_CAMPAIGN_EVENT_SLUGS = new Set(["hiring-call", "recruiter-intro"]);
-
-const NuenBookingPromo = (): JSX.Element => {
-  const { t } = useLocale();
-
-  return (
-    <section
-      data-testid="nuen-booking-promo"
-      className="dark relative z-10 w-full max-w-5xl px-5 pb-8 pt-2 sm:px-8 sm:pb-10">
-      <Logo inline={false} className="block [&_img]:h-5" />
-      <div className="mt-12 max-w-3xl sm:mt-16">
-        <p
-          data-testid="nuen-booking-promo-headline"
-          className="text-4xl font-semibold leading-[1.08] tracking-[-0.035em] sm:text-5xl lg:text-6xl">
-          <span className="text-white">{t("nuen_booking_promo_headline_lead")} </span>
-          <span className="nuen-gradient-text">{t("nuen_booking_promo_headline_accent")}</span>
-        </p>
-        <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-          {t("nuen_booking_promo_description")}
-        </p>
-      </div>
-    </section>
-  );
-};
 
 const BookerComponent = ({
   username,
@@ -234,8 +209,7 @@ const BookerComponent = ({
     CLOUDFLARE_USE_TURNSTILE_IN_BOOKER === "1" &&
     (bookerState === "booking" || (bookerState === "selecting_time" && skipConfirmStep))
   );
-  const showNuenCampaign =
-    !isEmbed && !isPlatform && !hideBranding && !rescheduleUid && NUEN_CAMPAIGN_EVENT_SLUGS.has(eventSlug);
+  const showNuenCampaign = !isEmbed && !isPlatform && !hideBranding && !rescheduleUid;
 
   const onAvailableTimeSlotSelect = (time: string) => {
     setSelectedTimeslot(time);

@@ -12,6 +12,7 @@ import { UserAvatar } from "@calcom/ui/components/avatar";
 import { Icon } from "@calcom/ui/components/icon";
 import { OrgBanner } from "@calcom/ui/components/organization-banner";
 import { UnpublishedEntity } from "@calcom/ui/components/unpublished-entity";
+import { NuenBookingPromo } from "@calcom/web/components/nuen/NuenBookingPromo";
 import { EventTypeDescriptionLazy as EventTypeDescription } from "@calcom/web/modules/event-types/components";
 import EmptyPage from "@calcom/web/modules/event-types/components/EmptyPage";
 import type { getServerSideProps } from "@server/lib/[user]/getServerSideProps";
@@ -22,7 +23,7 @@ import { Toaster } from "sonner";
 
 export type PageProps = InferGetServerSidePropsType<typeof getServerSideProps>;
 export function UserPage(props: PageProps) {
-  const { users, profile, eventTypes, entity } = props;
+  const { users, profile, eventTypes, entity, isBrandingHidden, isPlatformProfile } = props;
 
   const [user] = users; //To be used when we only have a single user, not dynamic group
   useTheme(profile.theme);
@@ -51,15 +52,23 @@ export function UserPage(props: PageProps) {
 
   const isEventListEmpty = eventTypes.length === 0;
   const isOrg = !!user?.profile?.organization;
+  const showNuenCampaign = !isEmbed && !isBrandingHidden && !isPlatformProfile;
 
   return (
     <>
-      <div className={classNames(shouldAlignCentrally ? "mx-auto" : "", isEmbed ? "max-w-3xl" : "")}>
+      <div
+        className={classNames(
+          shouldAlignCentrally ? "mx-auto" : "",
+          isEmbed ? "max-w-3xl" : "min-h-screen py-8 sm:py-12",
+          showNuenCampaign && "nuen-booking-background"
+        )}>
+        {showNuenCampaign && <NuenBookingPromo />}
         <main
           className={classNames(
             shouldAlignCentrally ? "mx-auto" : "",
             isEmbed ? "border-booker border-booker-width  bg-default rounded-md" : "",
-            "max-w-3xl px-4 py-12"
+            "max-w-3xl px-4",
+            isEmbed ? "py-12" : "pb-12"
           )}>
           <div className="border-subtle bg-default text-default mb-8 overflow-hidden rounded-xl border">
             {isOrg && user.profile.organization?.bannerUrl && (

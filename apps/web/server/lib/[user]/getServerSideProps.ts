@@ -2,6 +2,7 @@ import { encode } from "node:querystring";
 import { getUsernameList } from "@calcom/features/eventtypes/lib/defaultEvents";
 import { getEventTypesPublic } from "@calcom/features/eventtypes/lib/getEventTypesPublic";
 import { getBrandingForUser } from "@calcom/features/profile/lib/getBranding";
+import { getHideBranding } from "@calcom/features/profile/lib/hideBranding";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import { DEFAULT_DARK_BRAND_COLOR, DEFAULT_LIGHT_BRAND_COLOR } from "@calcom/lib/constants";
 import { getUserAvatarUrl } from "@calcom/lib/getAvatarUrl";
@@ -72,7 +73,9 @@ type UserPageProps = {
     | "seatsPerTimeSlot"
     | "schedulingType"
   >)[];
+  isBrandingHidden: boolean;
   isOrgSEOIndexable: boolean | undefined;
+  isPlatformProfile: boolean;
 } & EmbedProps;
 
 export const getServerSideProps: GetServerSideProps<UserPageProps> = async (context) => {
@@ -162,7 +165,17 @@ export const getServerSideProps: GetServerSideProps<UserPageProps> = async (cont
     context.res.setHeader("X-Data-Fetch-Time", `${dataFetchEnd - dataFetchStart}ms`);
   }
 
-  const eventTypes = await getEventTypesPublic(user.id);
+  const [eventTypes, isBrandingHidden, platformProfile] = await Promise.all([
+    getEventTypesPublic(user.id),
+    getHideBranding({ userId: user.id }),
+    prisma.profile.findFirst({
+      where: {
+        userId: user.id,
+        organization: { isPlatform: true },
+      },
+      select: { id: true },
+    }),
+  ]);
 
   // if profile only has one public event-type, redirect to it
   if (eventTypes.length === 1 && context.query.redirect !== "false") {
@@ -206,7 +219,9 @@ export const getServerSideProps: GetServerSideProps<UserPageProps> = async (cont
       // Dynamic group has no theme preference right now. It uses system theme.
       themeBasis: user.username,
       markdownStrippedBio,
+      isBrandingHidden,
       isOrgSEOIndexable: org?.organizationSettings?.allowSEOIndexing ?? false,
+      isPlatformProfile: Boolean(platformProfile),
     },
   };
 };
