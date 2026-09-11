@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="89" height="19" viewBox="0 0 89 19" role="img" aria-label="Nuen">
+  <defs>
+    <linearGradient id="nuen-accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#93c5fd" />
+      <stop offset="0.5" stop-color="#c4b5fd" />
+      <stop offset="1" stop-color="#f0abfc" />
+    </linearGradient>
+  </defs>
+  <text
+    x="0"
+    y="16"
+    fill="#071b33"
+    font-family="Ubuntu, Avenir Next, Segoe UI, sans-serif"
+    font-size="18"
+    font-weight="700"
+    letter-spacing="-0.18"
+  >nuen</text>
+  <text
+    x="41"
+    y="16"
+    fill="url(#nuen-accent)"
+    font-family="Ubuntu, Avenir Next, Segoe UI, sans-serif"
+    font-size="18"
+    font-weight="700"
+  >.</text>
+</svg>

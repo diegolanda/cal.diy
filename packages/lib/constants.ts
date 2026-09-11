@@ -3,6 +3,8 @@
  * prepends https:// to make it valid for URL parsing.
  * This handles cases where environment variables have their protocol stripped
  */
+import process from "node:process";
+
 function ensureProtocol(url: string | undefined): string {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -98,16 +100,16 @@ export const PUBLIC_QUICK_AVAILABILITY_ROLLOUT =
 
 /** @deprecated use `WEBAPP_URL` */
 export const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_WEBAPP_URL || `https://${process.env.VERCEL_URL}`;
-export const LOGO = "/calcom-logo-white-word.svg";
-export const LOGO_DARK = "/cal-logo-word-black.svg";
-export const LOGO_ICON = "/cal-com-icon-white.svg";
+export const LOGO = "/nuen-wordmark.svg";
+export const LOGO_DARK = "/nuen-wordmark.svg";
+export const LOGO_ICON = "/nuen-icon.svg";
 export const AVATAR_FALLBACK = "/avatar.svg";
-export const FAVICON_16 = "/favicon-16x16.png";
-export const FAVICON_32 = "/favicon-32x32.png";
-export const APPLE_TOUCH_ICON = "/apple-touch-icon.png";
-export const MSTILE_ICON = "/mstile-150x150.png";
-export const ANDROID_CHROME_ICON_192 = "/android-chrome-192x192.png";
-export const ANDROID_CHROME_ICON_256 = "/android-chrome-256x256.png";
+export const FAVICON_16 = "/nuen-icon.svg";
+export const FAVICON_32 = "/nuen-icon.svg";
+export const APPLE_TOUCH_ICON = "/nuen-icon.svg";
+export const MSTILE_ICON = "/nuen-icon.svg";
+export const ANDROID_CHROME_ICON_192 = "/nuen-icon.svg";
+export const ANDROID_CHROME_ICON_256 = "/nuen-icon.svg";
 export const ROADMAP = "https://cal.com/roadmap";
 export const DESKTOP_APP_LINK = "https://cal.com/download";
 export const JOIN_COMMUNITY = "https://github.com/calcom/cal.diy/discussions";

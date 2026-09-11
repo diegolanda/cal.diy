@@ -183,7 +183,7 @@ async function getHandler(request: NextRequest) {
   const [subdomain] = domains;
   const teamLogos = await getTeamLogos(subdomain, isValidOrgDomain);
 
-  // Resolve all icon types to team logos, falling back to Cal.diy defaults.
+  // Resolve all icon types to team logos, falling back to the Nuen defaults.
   const type: LogoType = parsedQuery?.type && isValidLogoType(parsedQuery.type) ? parsedQuery.type : "logo";
   const logoDefinition = logoDefinitions[type];
   const filteredLogo = teamLogos[logoDefinition.source] ?? logoDefinition.fallback;
@@ -213,8 +213,8 @@ async function getHandler(request: NextRequest) {
     let buffer: Buffer = Buffer.from(arrayBuffer);
     let contentType = response.headers.get("content-type") || "image/png";
 
-    // Resize the team logos if needed
-    if (teamLogos[logoDefinition.source] && logoDefinition.w) {
+    // Browser icon endpoints must return the declared PNG format, including for SVG defaults.
+    if (logoDefinition.w) {
       const { resizeImage } = await import("@calcom/lib/server/imageUtils");
       const { buffer: outBuffer, contentType: outContentType } = await resizeImage({
         buffer,

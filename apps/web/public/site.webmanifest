@@ -1,7 +1,7 @@
 {
-    "name": "Cal.diy",
-    "short_name": "Cal.diy",
-    "description": "Scheduling infrastructure for absolutely everyone.",
+    "name": "Nuen Scheduling",
+    "short_name": "Nuen",
+    "description": "Scheduling for Nuen teams.",
     "icons": [
         {
             "src": "/api/logo?type=android-chrome-192",
@@ -14,8 +14,8 @@
             "type": "image/png"
         }
     ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
+    "theme_color": "#071b33",
+    "background_color": "#f8f9fa",
     "display_override": ["minimal-ui"],
     "display": "standalone",
     "scope": "/",

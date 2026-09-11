@@ -10,6 +10,7 @@ import Script from "next/script";
 import type React from "react";
 
 import "../styles/globals.css";
+import process from "node:process";
 import { AppRouterI18nProvider } from "./AppRouterI18nProvider";
 import { Providers } from "./providers";
 import { SpeculationRules } from "./SpeculationRules";
@@ -54,8 +55,8 @@ export const metadata = {
     other: [
       {
         rel: "icon-mask",
-        url: "/safari-pinned-tab.svg",
-        color: "#000000",
+        url: "/nuen-icon.svg",
+        color: "#071b33",
       },
       {
         url: "/api/logo?type=favicon-16",
@@ -71,11 +72,9 @@ export const metadata = {
   },
   manifest: "/site.webmanifest",
   other: {
-    "application-TileColor": "#ff0000",
+    "application-TileColor": "#071b33",
   },
   twitter: {
-    site: "@calcom",
-    creator: "@calcom",
     card: "summary_large_image",
   },
   robots: {
@@ -122,8 +121,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head nonce={nonce}>
         <style>{`
           :root {
-            --font-sans: ${ubuntuFont.style.fontFamily.replace(/\'/g, "")}, "Avenir Next", "Segoe UI", system-ui, sans-serif;
-            --font-cal: ${calFont.style.fontFamily.replace(/\'/g, "")};
+            --font-sans: ${ubuntuFont.style.fontFamily.replace(/'/g, "")}, "Avenir Next", "Segoe UI", system-ui, sans-serif;
+            --font-cal: ${calFont.style.fontFamily.replace(/'/g, "")};
           }
         `}</style>
         {process.env.NODE_ENV === "development" && (

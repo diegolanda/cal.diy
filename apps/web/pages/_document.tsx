@@ -1,11 +1,10 @@
-import { platform } from "@todesktop/client-core";
 import type { IncomingMessage } from "node:http";
+import process from "node:process";
+import { IS_PRODUCTION } from "@calcom/lib/constants";
+import { platform } from "@todesktop/client-core";
 import { dir } from "i18next";
 import type { DocumentContext, DocumentProps } from "next/document";
 import Document, { Head, Html, Main, NextScript } from "next/document";
-
-import { IS_PRODUCTION } from "@calcom/lib/constants";
-
 import { applyTheme, applyToDesktopClass } from "./../lib/pages/document/_applyThemeForDocument";
 
 type Props = Record<string, unknown> & DocumentProps & { newLocale: string };
@@ -69,10 +68,10 @@ class MyDocument extends Document<Props> {
           <link rel="icon" type="image/png" sizes="32x32" href="/api/logo?type=favicon-32" />
           <link rel="icon" type="image/png" sizes="16x16" href="/api/logo?type=favicon-16" />
           <link rel="manifest" href="/site.webmanifest" />
-          <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#000000" />
-          <meta name="msapplication-TileColor" content="#ff0000" />
-          <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F9FAFC" />
-          <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1F1F1F" />
+          <link rel="mask-icon" href="/nuen-icon.svg" color="#071b33" />
+          <meta name="msapplication-TileColor" content="#071b33" />
+          <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8f9fa" />
+          <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#020817" />
           {!IS_PRODUCTION && process.env.VERCEL_ENV === "preview" && (
             // eslint-disable-next-line @next/next/no-sync-scripts
             <script
