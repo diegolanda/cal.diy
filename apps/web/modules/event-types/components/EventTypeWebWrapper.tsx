@@ -63,7 +63,6 @@ const EventWebhooksTab = dynamic(() =>
   import("./tabs/webhooks/EventWebhooksTab").then((mod) => mod.EventWebhooksTab)
 );
 
-
 export type EventTypeWebWrapperProps = {
   id: number;
   data: RouterOutputs["viewer"]["eventTypes"]["get"];
@@ -200,12 +199,7 @@ const EventTypeWeb = ({
         teamMembers={teamMembers}
       />
     ),
-    team: (
-      <EventTeamAssignmentTab
-        teamMembers={teamMembers}
-        team={team}
-      />
-    ),
+    team: <EventTeamAssignmentTab teamMembers={teamMembers} team={team} />,
     limits: <EventLimitsTab eventType={eventType} />,
     advanced: (
       <EventAdvancedTab
@@ -278,16 +272,7 @@ const EventTypeWeb = ({
 
   const querySchema = z.object({
     tabName: z
-      .enum([
-        "setup",
-        "availability",
-        "team",
-        "limits",
-        "advanced",
-        "recurring",
-        "apps",
-        "webhooks",
-      ])
+      .enum(["setup", "availability", "team", "limits", "advanced", "recurring", "apps", "webhooks"])
       .optional()
       .default("setup"),
   });

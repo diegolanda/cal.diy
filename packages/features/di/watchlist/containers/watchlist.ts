@@ -32,7 +32,7 @@ class DisabledOrganizationPermissionService {
   }
 }
 
-export const watchlistContainer= createContainer();
+export const watchlistContainer = createContainer();
 
 prismaModuleLoader.loadModule(watchlistContainer);
 loggerModuleLoader.loadModule(watchlistContainer);

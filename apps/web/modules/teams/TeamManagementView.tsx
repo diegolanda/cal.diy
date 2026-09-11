@@ -71,9 +71,7 @@ function TeamCard({ membership }: { membership: TeamMembership }): ReactElement 
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
           <h2 className="text-emphasis text-lg font-semibold">{membership.team.name}</h2>
-          {membership.team.slug && (
-            <p className="text-subtle text-sm">/team/{membership.team.slug}</p>
-          )}
+          {membership.team.slug && <p className="text-subtle text-sm">/team/{membership.team.slug}</p>}
         </div>
         <span className="bg-muted text-subtle rounded-full px-3 py-1 text-xs font-medium">
           {t(membership.role.toLowerCase())}
@@ -187,11 +185,7 @@ function TeamCard({ membership }: { membership: TeamMembership }): ReactElement 
   );
 }
 
-export default function TeamManagementView({
-  canCreateTeams,
-}: {
-  canCreateTeams: boolean;
-}): ReactElement {
+export default function TeamManagementView({ canCreateTeams }: { canCreateTeams: boolean }): ReactElement {
   const { t } = useLocale();
   const utils = trpc.useUtils();
   const { data: memberships, isPending } = trpc.viewer.teams.list.useQuery();

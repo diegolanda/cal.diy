@@ -1,6 +1,6 @@
 import {
-  TeamPermissionService,
   type TeamPermission,
+  TeamPermissionService,
 } from "@calcom/features/membership/services/TeamPermissionService";
 import { prisma } from "@calcom/prisma";
 import { UserPermissionRole } from "@calcom/prisma/enums";

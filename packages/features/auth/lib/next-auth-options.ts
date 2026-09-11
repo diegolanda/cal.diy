@@ -988,7 +988,10 @@ export const getOptions = ({
                 log.error("Error while linking account of already existing user", safeStringify(error));
               }
             }
-            if (shouldUseApplicationTwoFactor(existingUser.twoFactorEnabled) && existingUser.identityProvider === idP) {
+            if (
+              shouldUseApplicationTwoFactor(existingUser.twoFactorEnabled) &&
+              existingUser.identityProvider === idP
+            ) {
               return loginWithTotp(existingUser.email);
             } else {
               return true;
