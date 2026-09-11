@@ -31,6 +31,22 @@ vi.mock("next/navigation", async (importOriginal) => {
   };
 });
 
+vi.mock("@calcom/lib/hooks/useLocale", () => ({
+  useLocale: () => {
+    const translations: Record<string, string> = {
+      nuen_booking_promo_description:
+        "Start with one engineer at 10–20 hours a week. You see the rate, 75% of it goes to the engineer, and you scale only when the fit is real.",
+      nuen_booking_promo_headline_accent: "engineers without the agency markup.",
+      nuen_booking_promo_headline_lead: "Hire senior LATAM",
+    };
+
+    return {
+      i18n: { language: "en" },
+      t: (key: string) => translations[key] ?? key,
+    };
+  },
+}));
+
 import "@calcom/dayjs/__mocks__";
 import "@calcom/web/modules/auth/components/Turnstile";
 
@@ -234,13 +250,78 @@ describe("Booker", () => {
 
     const logo = screen.getByRole("img", { name: "Nuen" });
     expect(logo.querySelector('img[src="/api/logo"]')).toBeInTheDocument();
+    expect(logo.querySelector('img[src="/nuen-wordmark-dark.svg"]')).toBeInTheDocument();
     expect(logo.parentElement).not.toHaveClass("hidden");
+  });
+
+  it.each(
+    ["hiring-call", "recruiter-intro"].flatMap((eventSlug) =>
+      Object.values(BookerLayouts).map((layout) => ({ eventSlug, layout }))
+    )
+  )("shows the Nuen campaign for $eventSlug in the $layout public layout", ({ eventSlug, layout }) => {
+    const props = {
+      ...defaultProps,
+      eventSlug,
+      bookerLayout: { ...defaultProps.bookerLayout, layout },
+    };
+
+    render(<Booker {...(props as unknown as BookerProps & WrappedBookerProps)} />, {
+      mockStore: { state: "selecting_time", selectedDate: "2024-01-01" },
+    });
+
+    const promo = screen.getByTestId("nuen-booking-promo");
+    expect(promo).toBeInTheDocument();
+    expect(promo.parentElement).toHaveClass("nuen-booking-background");
+    expect(screen.getByTestId("nuen-booking-promo-headline")).toHaveTextContent(
+      "Hire senior LATAM engineers without the agency markup."
+    );
+    expect(screen.getByText("engineers without the agency markup.")).toHaveClass("nuen-gradient-text");
+  });
+
+  it("does not show the Nuen campaign in embedded booking pages", () => {
+    const props = {
+      ...defaultProps,
+      eventSlug: "hiring-call",
+      bookerLayout: { ...defaultProps.bookerLayout, isEmbed: true },
+    };
+
+    render(<Booker {...(props as unknown as BookerProps & WrappedBookerProps)} />, {
+      mockStore: { state: "selecting_time", selectedDate: "2024-01-01" },
+    });
+
+    expect(screen.queryByTestId("nuen-booking-promo")).not.toBeInTheDocument();
+  });
+
+  it("does not show the Nuen campaign on non-promotional event pages", () => {
+    render(<Booker {...(defaultProps as unknown as BookerProps & WrappedBookerProps)} />, {
+      mockStore: { state: "selecting_time", selectedDate: "2024-01-01" },
+    });
+
+    expect(screen.queryByTestId("nuen-booking-promo")).not.toBeInTheDocument();
+  });
+
+  it("does not show the Nuen campaign on platform or reschedule pages", () => {
+    const platformProps = { ...defaultProps, eventSlug: "hiring-call", isPlatform: true };
+    const rescheduleProps = { ...defaultProps, eventSlug: "hiring-call", rescheduleUid: "booking-uid" };
+
+    const { rerender } = render(
+      <Booker {...(platformProps as unknown as BookerProps & WrappedBookerProps)} />,
+      { mockStore: { state: "selecting_time", selectedDate: "2024-01-01" } }
+    );
+    expect(screen.queryByTestId("nuen-booking-promo")).not.toBeInTheDocument();
+
+    rerender(<Booker {...(rescheduleProps as unknown as BookerProps & WrappedBookerProps)} />);
+    expect(screen.queryByTestId("nuen-booking-promo")).not.toBeInTheDocument();
   });
 
   it("does not show the Nuen wordmark when branding is hidden", () => {
     render(
       <Booker
-        {...({ ...defaultProps, hideBranding: true } as unknown as BookerProps & WrappedBookerProps)}
+        {...({
+          ...defaultProps,
+          eventSlug: "hiring-call",
+          hideBranding: true,
+        } as unknown as BookerProps & WrappedBookerProps)}
       />,
       {
         mockStore: { state: "selecting_time", selectedDate: "2024-01-01" },

@@ -25,6 +25,7 @@ import {
   PUBLIC_INVALIDATE_AVAILABLE_SLOTS_ON_BOOKING_FORM,
 } from "@calcom/lib/constants";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { BookerLayouts } from "@calcom/prisma/zod-utils";
 import classNames from "@calcom/ui/classNames";
 import { DialogContent } from "@calcom/ui/components/dialog";
@@ -52,6 +53,31 @@ import { OverlayCalendar } from "./OverlayCalendar/OverlayCalendar";
 import { SlotSelectionModalHeader } from "./SlotSelectionModalHeader";
 import { NotFound } from "./Unavailable";
 import { VerifyCodeDialog } from "./VerifyCodeDialog";
+
+const NUEN_CAMPAIGN_EVENT_SLUGS = new Set(["hiring-call", "recruiter-intro"]);
+
+const NuenBookingPromo = (): JSX.Element => {
+  const { t } = useLocale();
+
+  return (
+    <section
+      data-testid="nuen-booking-promo"
+      className="dark relative z-10 w-full max-w-5xl px-5 pb-8 pt-2 sm:px-8 sm:pb-10">
+      <Logo inline={false} className="block [&_img]:h-5" />
+      <div className="mt-12 max-w-3xl sm:mt-16">
+        <p
+          data-testid="nuen-booking-promo-headline"
+          className="text-4xl font-semibold leading-[1.08] tracking-[-0.035em] sm:text-5xl lg:text-6xl">
+          <span className="text-white">{t("nuen_booking_promo_headline_lead")} </span>
+          <span className="nuen-gradient-text">{t("nuen_booking_promo_headline_accent")}</span>
+        </p>
+        <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+          {t("nuen_booking_promo_description")}
+        </p>
+      </div>
+    </section>
+  );
+};
 
 const BookerComponent = ({
   username,
@@ -208,6 +234,8 @@ const BookerComponent = ({
     CLOUDFLARE_USE_TURNSTILE_IN_BOOKER === "1" &&
     (bookerState === "booking" || (bookerState === "selecting_time" && skipConfirmStep))
   );
+  const showNuenCampaign =
+    !isEmbed && !isPlatform && !hideBranding && !rescheduleUid && NUEN_CAMPAIGN_EVENT_SLUGS.has(eventSlug);
 
   const onAvailableTimeSlotSelect = (time: string) => {
     setSelectedTimeslot(time);
@@ -341,10 +369,12 @@ const BookerComponent = ({
           // In a popup embed, if someone clicks outside the main(having main class or main tag), it closes the embed
           "main",
           "text-default flex min-h-full w-full flex-col items-center",
-          layout === BookerLayouts.MONTH_VIEW && !isEmbed && "my-20 ",
+          showNuenCampaign && "nuen-booking-background min-h-screen py-8 sm:py-12",
+          layout === BookerLayouts.MONTH_VIEW && !isEmbed && !showNuenCampaign && "my-20 ",
           layout === BookerLayouts.MONTH_VIEW ? "overflow-visible" : "overflow-clip",
           `${customClassNames?.bookerWrapper}`
         )}>
+        {showNuenCampaign && <NuenBookingPromo />}
         <div
           ref={animationScope}
           data-testid="booker-container"
@@ -553,16 +583,19 @@ const BookerComponent = ({
           </div>
         )}
 
-        {!hideBranding && (!isPlatform || isPlatformBookerEmbed) && !shouldRenderCaptcha && (
-          <m.div
-            key="logo"
-            className={classNames(
-              "mb-6 mt-auto flex justify-center pt-6 [&_img]:h-[15px]",
-              hasDarkBackground ? "dark" : ""
-            )}>
-            <Logo small inline={false} />
-          </m.div>
-        )}
+        {!showNuenCampaign &&
+          !hideBranding &&
+          (!isPlatform || isPlatformBookerEmbed) &&
+          !shouldRenderCaptcha && (
+            <m.div
+              key="logo"
+              className={classNames(
+                "mb-6 mt-auto flex justify-center pt-6 [&_img]:h-[15px]",
+                hasDarkBackground ? "dark" : ""
+              )}>
+              <Logo small inline={false} />
+            </m.div>
+          )}
       </div>
       <>
         {verifyCode && formEmail ? (
