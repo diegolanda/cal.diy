@@ -27,11 +27,11 @@
     <![endif]-->
     <!--[if !mso]><!-->
     <link
-      href="https://fonts.googleapis.com/css?family=Roboto:400,500,700"
+      href="https://fonts.googleapis.com/css?family=Ubuntu:400,500,700"
       rel="stylesheet"
       type="text/css" />
     <style type="text/css">
-      @import url(https://fonts.googleapis.com/css?family=Roboto:400,500,700);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu:400,500,700);
     </style>
     <!--<![endif]-->
     <style type="text/css">
@@ -129,7 +129,7 @@
       body,
       td,
       th {
-        font-family: "Roboto", Helvetica, Arial, sans-serif;
+        font-family: "Ubuntu", "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
       }
 
       h1 {
@@ -189,15 +189,15 @@
       /* Buttons ------------------------------ */
 
       .button {
-        background-color: #000;
-        border-top: 10px solid #000;
-        border-right: 18px solid #000;
-        border-bottom: 10px solid #000;
-        border-left: 18px solid #000;
+        background-color: #071b33;
+        border-top: 10px solid #071b33;
+        border-right: 18px solid #071b33;
+        border-bottom: 10px solid #071b33;
+        border-left: 18px solid #071b33;
         display: inline-block;
         color: #fff !important;
         text-decoration: none;
-        border-radius: 0;
+        border-radius: 12px;
         /* box-shadow: 0 2px 3px rgba(0, 0, 0, 0.16); */
         -webkit-text-size-adjust: none;
         box-sizing: border-box;
@@ -216,7 +216,7 @@
       }
 
       .attributes_content {
-        background-color: #f4f4f7;
+        background-color: #f8f9fa;
         padding: 16px;
       }
 
@@ -259,7 +259,7 @@
       /* Data table ------------------------------ */
 
       body {
-        background-color: #f2f4f6;
+        background-color: #f8f9fa;
         color: #51545e;
       }
 
@@ -274,7 +274,7 @@
         -premailer-width: 100%;
         -premailer-cellpadding: 0;
         -premailer-cellspacing: 0;
-        background-color: #f2f4f6;
+        background-color: #f8f9fa;
       }
 
       .email-content {
@@ -374,7 +374,7 @@
         .email-wrapper,
         .email-masthead,
         .email-footer {
-          background-color: #333333 !important;
+          background-color: #020817 !important;
           color: #fff !important;
         }
         p,
@@ -389,7 +389,12 @@
           color: #fff !important;
         }
         .attributes_content {
-          background-color: #222 !important;
+          background-color: #0b2442 !important;
+        }
+        .button {
+          background-color: #f8f9fa !important;
+          border-color: #f8f9fa !important;
+          color: #071b33 !important;
         }
         .email-masthead_name {
           text-shadow: none !important;
@@ -418,7 +423,7 @@
             <!-- <tr>
               <td class="email-masthead">
                 <a href="{{base_url}}" class="f-fallback email-masthead_name">
-                  Cal.diy
+                  {{app_name}}
                 </a>
               </td>
             </tr> -->
@@ -470,21 +475,22 @@
                                   style="border-collapse: collapse; border-spacing: 0px">
                                   <tbody>
                                     <tr>
-                                      <td style="width: 89px">
+                                      <td style="width: 86px; background-color: #f8f9fa; border-radius: 8px; padding: 6px 8px">
                                         <a href="{{base_url}}" target="_blank">
                                           <img
-                                            height="19"
+                                            alt="Nuen"
+                                            height="22"
                                             src="{{base_url}}/emails/logo.png"
                                             style="
                                               border: 0;
                                               display: block;
                                               outline: none;
                                               text-decoration: none;
-                                              height: 19px;
+                                              height: 22px;
                                               width: 100%;
                                               font-size: 13px;
                                             "
-                                            width="89" />
+                                            width="86" />
                                         </a>
                                       </td>
                                     </tr>
@@ -534,21 +540,22 @@
                                   style="border-collapse: collapse; border-spacing: 0px">
                                   <tbody>
                                     <tr>
-                                      <td style="width: 89px">
+                                      <td style="width: 86px; background-color: #f8f9fa; border-radius: 8px; padding: 6px 8px">
                                         <a href="{{base_url}}" target="_blank">
                                           <img
-                                            height="19"
+                                            alt="Nuen"
+                                            height="22"
                                             src="{{base_url}}/emails/logo.png"
                                             style="
                                               border: 0;
                                               display: block;
                                               outline: none;
                                               text-decoration: none;
-                                              height: 19px;
+                                              height: 22px;
                                               width: 100%;
                                               font-size: 13px;
                                             "
-                                            width="89" />
+                                            width="86" />
                                         </a>
                                       </td>
                                     </tr>
@@ -580,7 +587,7 @@
                     <td class="content-cell">
                       <div class="f-fallback">
                         <p>
-                          Click the button below to log in to Cal.diy<br />
+                          Click the button below to log in to {{app_name}}<br />
                           This link will expire in 10 minutes.
                         </p>
                         <!-- Action -->
@@ -604,7 +611,7 @@
                                 <tr>
                                   <td>
                                     <a href="{{signin_url}}" class="f-fallback button" target="_blank"
-                                      >Log into Cal.diy</a
+                                      >Log into {{app_name}}</a
                                     >
                                   </td>
                                 </tr>
@@ -613,7 +620,7 @@
                           </tr>
                         </table>
                         <p>Confirming this request will securely log you in using {{email}}.</p>
-                        <p>Enjoy your new scheduling solution by,<br />The Cal.diy Team</p>
+                        <p>Enjoy your new scheduling solution by,<br />The {{app_name}} Team</p>
                         <!-- Sub copy -->
                         <table class="body-sub" role="presentation">
                           <tr>
@@ -643,7 +650,7 @@
                   role="presentation">
                   <tr>
                     <td class="content-cell" align="center">
-                      <p class="f-fallback sub align-center">&copy; 2025 Cal.diy. All rights reserved.</p>
+                      <p class="f-fallback sub align-center">&copy; {{year}} {{app_name}}. All rights reserved.</p>
                     </td>
                   </tr>
                 </table>

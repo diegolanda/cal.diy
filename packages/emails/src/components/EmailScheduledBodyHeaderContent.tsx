@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-
 import EmailCommonDivider from "./EmailCommonDivider";
 
 const EmailScheduledBodyHeaderContent = (props: {
@@ -21,7 +20,7 @@ const EmailScheduledBodyHeaderContent = (props: {
         <div
           data-testid="heading"
           style={{
-            fontFamily: "Roboto, Helvetica, sans-serif",
+            fontFamily: "Ubuntu, Avenir Next, Segoe UI, Helvetica, Arial, sans-serif",
             fontSize: 24,
             fontWeight: 700,
             lineHeight: "24px",
@@ -38,7 +37,7 @@ const EmailScheduledBodyHeaderContent = (props: {
           <div
             data-testid="subHeading"
             style={{
-              fontFamily: "Roboto, Helvetica, sans-serif",
+              fontFamily: "Ubuntu, Avenir Next, Segoe UI, Helvetica, Arial, sans-serif",
               fontSize: 16,
               fontWeight: 400,
               lineHeight: "24px",

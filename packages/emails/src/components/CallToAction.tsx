@@ -31,10 +31,10 @@ export const CallToAction = (props: {
     <p
       style={{
         display: "inline-block",
-        background: secondary ? "#FFFFFF" : "#292929",
-        border: secondary ? "1px solid #d1d5db" : "",
+        background: secondary ? "#FFFFFF" : "#071B33",
+        border: secondary ? "1px solid #C5C5D6" : "",
         color: "#ffffff",
-        fontFamily: "Roboto, Helvetica, sans-serif",
+        fontFamily: "Ubuntu, Avenir Next, Segoe UI, Helvetica, Arial, sans-serif",
         fontSize: "0.875rem",
         fontWeight: 500,
         lineHeight: "1rem",
@@ -43,16 +43,16 @@ export const CallToAction = (props: {
         textTransform: "none",
         padding: calculatePadding(),
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
+        // @ts-expect-error
         msoPaddingAlt: "0px",
-        borderRadius: "6px",
+        borderRadius: "12px",
         boxSizing: "border-box",
         height: "2.25rem",
       }}>
       {/* @ts-expect-error shared props between href and button */}
       <El
         style={{
-          color: secondary ? "#292929" : "#FFFFFF",
+          color: secondary ? "#071B33" : "#FFFFFF",
           textDecoration: "none",
           display: "flex",
           alignItems: "center",

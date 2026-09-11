@@ -4,7 +4,7 @@ import EmailBodyLogo from "./EmailBodyLogo";
 import EmailHead from "./EmailHead";
 import EmailScheduledBodyHeaderContent from "./EmailScheduledBodyHeaderContent";
 import EmailSchedulingBodyDivider from "./EmailSchedulingBodyDivider";
-import EmailSchedulingBodyHeader, { BodyHeadType } from "./EmailSchedulingBodyHeader";
+import EmailSchedulingBodyHeader, { type BodyHeadType } from "./EmailSchedulingBodyHeader";
 import RawHtml from "./RawHtml";
 import Row from "./Row";
 
@@ -26,8 +26,8 @@ export const V2BaseEmailHtml = (props: {
   return (
     <Html>
       <EmailHead title={props.subject} />
-      <body style={{ wordSpacing: "normal", backgroundColor: "#F3F4F6" }}>
-        <div style={{ backgroundColor: "#F3F4F6" }}>
+      <body style={{ wordSpacing: "normal", backgroundColor: "#F8F9FA" }}>
+        <div style={{ backgroundColor: "#F8F9FA" }}>
           <RawHtml
             html={`<!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" style="width:600px;" width="600" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->`}
           />
@@ -79,14 +79,14 @@ export const V2BaseEmailHtml = (props: {
                     display: "inline-block",
                     verticalAlign: "top",
                     width: "100%",
-                    border: "1px solid #E1E1E1",
-                    borderRadius: "6px",
+                    border: "1px solid #DFE0E7",
+                    borderRadius: "12px",
                   }}>
                   <Row
                     border="0"
                     style={{
                       verticalAlign: "top",
-                      borderRadius: "6px",
+                      borderRadius: "12px",
                       background: "#FFFFFF",
                       backgroundColor: "#FFFFFF",
                     }}
@@ -101,7 +101,7 @@ export const V2BaseEmailHtml = (props: {
                       }}>
                       <div
                         style={{
-                          fontFamily: "Roboto, Helvetica, sans-serif",
+                          fontFamily: "Ubuntu, Avenir Next, Segoe UI, Helvetica, Arial, sans-serif",
                           fontSize: 16,
                           fontWeight: 500,
                           lineHeight: 1,
@@ -165,7 +165,7 @@ export const V2BaseEmailHtml = (props: {
                             style={{ fontSize: 0, padding: "10px 25px", wordBreak: "break-word" }}>
                             <div
                               style={{
-                                fontFamily: "Roboto, Helvetica, sans-serif",
+                                fontFamily: "Ubuntu, Avenir Next, Segoe UI, Helvetica, Arial, sans-serif",
                                 fontSize: 13,
                                 lineHeight: 1,
                                 textAlign: "left",

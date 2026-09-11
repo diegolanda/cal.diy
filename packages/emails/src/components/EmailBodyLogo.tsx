@@ -1,5 +1,4 @@
 import { WEBAPP_URL } from "@calcom/lib/constants";
-
 import RawHtml from "./RawHtml";
 import Row from "./Row";
 
@@ -45,22 +44,22 @@ const EmailBodyLogo = () => {
                     wordBreak: "break-word",
                   }}>
                   <Row border="0" style={{ borderCollapse: "collapse", borderSpacing: "0px" }}>
-                    <td style={{ width: "89px" }}>
+                    <td style={{ width: "86px" }}>
                       <a href={WEBAPP_URL} target="_blank" rel="noreferrer">
                         <img
-                          height="19"
+                          height="22"
                           src={image}
                           style={{
                             border: "0",
                             display: "block",
                             outline: "none",
                             textDecoration: "none",
-                            height: "19px",
+                            height: "22px",
                             width: "100%",
                             fontSize: "13px",
                           }}
-                          width="89"
-                          alt=""
+                          width="86"
+                          alt="Nuen"
                         />
                       </a>
                     </td>

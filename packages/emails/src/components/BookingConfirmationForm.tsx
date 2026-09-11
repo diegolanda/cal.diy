@@ -8,7 +8,7 @@ export const BookingConfirmationForm = (props: { action: string; children: React
           background: "#FFFFFF",
           border: "",
           color: "#ffffff",
-          fontFamily: "Roboto, Helvetica, sans-serif",
+          fontFamily: "Ubuntu, Avenir Next, Segoe UI, Helvetica, Arial, sans-serif",
           fontSize: "0.875rem",
           fontWeight: 500,
           lineHeight: "1rem",
@@ -17,7 +17,7 @@ export const BookingConfirmationForm = (props: { action: string; children: React
           textTransform: "none",
           padding: "0.625rem 0",
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
+          // @ts-expect-error
           msoPaddingAlt: "0px",
           borderRadius: "6px",
           boxSizing: "border-box",
@@ -27,7 +27,7 @@ export const BookingConfirmationForm = (props: { action: string; children: React
         <label
           style={{
             color: "#3e3e3e",
-            fontFamily: "Roboto, Helvetica, sans-serif",
+            fontFamily: "Ubuntu, Avenir Next, Segoe UI, Helvetica, Arial, sans-serif",
             fontSize: "0.875rem",
             fontWeight: 500,
             lineHeight: "1rem",
