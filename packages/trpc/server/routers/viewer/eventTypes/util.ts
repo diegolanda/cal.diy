@@ -110,6 +110,7 @@ export const createEventPbacProcedure = (
           id: z.number().optional(),
           eventTypeId: z.number().optional(),
           users: z.array(z.number()).optional(),
+          hosts: z.array(z.object({ userId: z.number() }).passthrough()).optional(),
         })
         .refine((data) => data.id !== undefined || data.eventTypeId !== undefined, {
           message: "At least one of 'id' or 'eventTypeId' must be present",
@@ -193,6 +194,20 @@ export const createEventPbacProcedure = (
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "Cannot assign event to users outside of team membership",
+          });
+        }
+      }
+
+      if (input.hosts && event.team) {
+        const acceptedTeamMemberIds = new Set(event.team.members.map((member) => member.userId));
+        const allHostsAreAcceptedMembers = input.hosts.every((host) =>
+          acceptedTeamMemberIds.has(host.userId)
+        );
+
+        if (!allHostsAreAcceptedMembers) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Cannot assign hosts outside of accepted team membership",
           });
         }
       }

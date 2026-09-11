@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@calcom/prisma";
 import { MembershipRole } from "@calcom/prisma/enums";
 import { TRPCError } from "@trpc/server";
-import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { authedProcedure } from "../../../procedures/authedProcedure";
 import { createEventPbacProcedure, ensureEmailOrPhoneNumberIsPresent } from "../util";
 
@@ -348,6 +348,57 @@ describe("createEventPbacProcedure", () => {
           meta: undefined,
         })
       ).resolves.not.toThrow();
+    });
+
+    it("should allow accepted Team members as hosts", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue(teamEvent);
+
+      const procedure = createEventPbacProcedure("eventType.update");
+      const middleware = getMiddleware(procedure);
+
+      await expect(
+        middleware({
+          ctx: mockCtx,
+          input: { id: 2, hosts: [{ userId: 1 }, { userId: 2 }] },
+          next: mockNext,
+          path: "test",
+          type: "mutation",
+          getRawInput: async () => ({}),
+          meta: undefined,
+        })
+      ).resolves.not.toThrow();
+      expect(mockPrisma.membership.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: 1,
+          teamId: 10,
+          accepted: true,
+          role: { in: [MembershipRole.ADMIN, MembershipRole.OWNER] },
+          team: { parentId: null, isOrganization: false },
+        },
+        select: { id: true },
+      });
+    });
+
+    it("should deny pending or outside-Team users as hosts", async () => {
+      mockPrisma.eventType.findUnique = vi.fn().mockResolvedValue(teamEvent);
+
+      const procedure = createEventPbacProcedure("eventType.update");
+      const middleware = getMiddleware(procedure);
+
+      const result = middleware({
+        ctx: mockCtx,
+        input: { id: 2, hosts: [{ userId: 999 }] },
+        next: mockNext,
+        path: "test",
+        type: "mutation",
+        getRawInput: async () => ({}),
+        meta: undefined,
+      });
+
+      await expect(result).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Cannot assign hosts outside of accepted team membership",
+      });
     });
   });
 
