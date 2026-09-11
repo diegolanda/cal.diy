@@ -1,10 +1,9 @@
+import { WEBAPP_URL } from "@calcom/lib/constants";
+import { App, Generic, getOGImageVersion, Meeting } from "@calcom/lib/OgImages";
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 import type { SatoriOptions } from "satori";
-import { z, ZodError } from "zod";
-
-import { Meeting, App, Generic, getOGImageVersion } from "@calcom/lib/OgImages";
-import { WEBAPP_URL } from "@calcom/lib/constants";
+import { ZodError, z } from "zod";
 
 export const runtime = "edge";
 
@@ -37,24 +36,23 @@ async function handler(req: NextRequest) {
 
   try {
     const fontResults = await Promise.allSettled([
-      fetch(new URL("/fonts/cal.ttf", WEBAPP_URL)).then((res) => res.arrayBuffer()),
-      fetch(new URL("/fonts/Inter-Regular.ttf", WEBAPP_URL)).then((res) => res.arrayBuffer()),
-      fetch(new URL("/fonts/Inter-Medium.ttf", WEBAPP_URL)).then((res) => res.arrayBuffer()),
+      fetch(new URL("/fonts/Ubuntu-Regular.ttf", WEBAPP_URL)).then((res) => res.arrayBuffer()),
+      fetch(new URL("/fonts/Ubuntu-Medium.ttf", WEBAPP_URL)).then((res) => res.arrayBuffer()),
+      fetch(new URL("/fonts/Ubuntu-Bold.ttf", WEBAPP_URL)).then((res) => res.arrayBuffer()),
     ]);
 
     const fonts: SatoriOptions["fonts"] = [];
 
+    if (fontResults[0].status === "fulfilled") {
+      fonts.push({ name: "ubuntu", data: fontResults[0].value, weight: 400 });
+    }
+
     if (fontResults[1].status === "fulfilled") {
-      fonts.push({ name: "inter", data: fontResults[1].value, weight: 400 });
+      fonts.push({ name: "ubuntu", data: fontResults[1].value, weight: 500 });
     }
 
     if (fontResults[2].status === "fulfilled") {
-      fonts.push({ name: "inter", data: fontResults[2].value, weight: 500 });
-    }
-
-    if (fontResults[0].status === "fulfilled") {
-      fonts.push({ name: "cal", data: fontResults[0].value, weight: 400 });
-      fonts.push({ name: "cal", data: fontResults[0].value, weight: 600 });
+      fonts.push({ name: "ubuntu", data: fontResults[2].value, weight: 700 });
     }
 
     const ogConfig = {

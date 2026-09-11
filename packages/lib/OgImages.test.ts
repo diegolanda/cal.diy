@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-
 import {
-  getOGImageVersion,
-  constructMeetingImage,
   constructAppImage,
   constructGenericImage,
+  constructMeetingImage,
+  getOGImageVersion,
 } from "./OgImages";
 
 describe("OgImages", () => {
@@ -83,15 +82,15 @@ describe("OgImages", () => {
     });
   });
 
-  describe("OG image branding uses configurable logo constants", () => {
-    it("generic type uses LOGO_DARK (with LOGO fallback) for darker logo on light backgrounds", async () => {
+  describe("OG image branding", () => {
+    it("versions the generic Nuen image", async () => {
       const genericVersion = await getOGImageVersion("generic");
       expect(genericVersion).toBeTruthy();
       expect(typeof genericVersion).toBe("string");
       expect(genericVersion.length).toBe(8);
     });
 
-    it("meeting and app types use LOGO constant", async () => {
+    it("versions the meeting and app Nuen images", async () => {
       const meetingVersion = await getOGImageVersion("meeting");
       const appVersion = await getOGImageVersion("app");
       expect(meetingVersion).toBeTruthy();
@@ -110,7 +109,7 @@ describe("OgImages", () => {
       expect(appVersion).not.toBe(genericVersion);
     });
 
-    it("self-hosters can override logos by replacing the referenced SVG files", async () => {
+    it("keeps the brand version stable for identical inputs", async () => {
       const v1 = await getOGImageVersion("generic");
       const v2 = await getOGImageVersion("generic");
       expect(v1).toBe(v2);

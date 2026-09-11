@@ -1,6 +1,5 @@
 import type React from "react";
-
-import { CAL_URL, LOGO, LOGO_DARK, WEBAPP_URL } from "./constants";
+import { CAL_URL, WEBAPP_URL } from "./constants";
 
 // Ensures tw prop is typed.
 declare module "react" {
@@ -51,23 +50,20 @@ const makeAbsoluteUrl = (url: string) => (/^https?:\/\//.test(url) ? url : `${CA
 
 const OG_ASSETS = {
   meeting: {
-    id: "meeting-og-image-v1", // Bump version when changing Meeting component structure/styling
-    logo: LOGO,
-    logoWidth: "350",
+    id: "meeting-og-image-v2", // Bump version when changing Meeting component structure/styling
+    brand: "nuen-wordmark-v1",
     avatarSize: "160",
     variant: "dark" as const,
   },
   app: {
-    id: "app-og-image-v1", // Bump version when changing App component structure/styling
-    logo: LOGO,
-    logoWidth: "150",
+    id: "app-og-image-v2", // Bump version when changing App component structure/styling
+    brand: "nuen-wordmark-v1",
     iconSize: "172",
     variant: "light" as const,
   },
   generic: {
-    id: "generic-og-image-v1", // Bump version when changing Generic component structure/styling
-    logo: LOGO_DARK,
-    logoWidth: "350",
+    id: "generic-og-image-v2", // Bump version when changing Generic component structure/styling
+    brand: "nuen-wordmark-v1",
     variant: "light" as const,
   },
 };
@@ -173,6 +169,10 @@ const Wrapper = ({ children, variant = "light", rotateBackground }: WrapperProps
   </div>
 );
 
+const BrandWordmark = ({ width }: { width: number }) => (
+  <img src={`${WEBAPP_URL}/nuen-wordmark.svg`} width={width} alt="Nuen" />
+);
+
 /**
  * ⚠️ IMPORTANT: When modifying this component's structure, styling, or visual output,
  * remember to bump the version in OG_ASSETS.meeting.id (e.g., "meeting-og-image-v1" → "meeting-og-image-v2")
@@ -204,8 +204,8 @@ export const Meeting = ({ title, users = [], profile }: MeetingImageProps) => {
   return (
     <Wrapper variant={config.variant}>
       <div tw="h-full flex flex-col justify-start">
-        <div tw="flex items-center justify-center" style={{ fontFamily: "cal", fontWeight: 300 }}>
-          <img src={`${WEBAPP_URL}/${config.logo}`} width={config.logoWidth} alt="Logo" />
+        <div tw="flex items-center justify-center">
+          <BrandWordmark width={230} />
           {avatars.length > 0 && (
             <div style={{ color: "#111827" }} tw="font-bold text-[92px] mx-8 bottom-2">
               /
@@ -235,7 +235,8 @@ export const Meeting = ({ title, users = [], profile }: MeetingImageProps) => {
             tw="flex w-[1040px] overflow-hidden"
             style={{
               whiteSpace: "nowrap",
-              fontFamily: "cal",
+              fontFamily: "ubuntu",
+              fontWeight: 500,
               textOverflow: "ellipsis",
             }}>
             Meet {joinMultipleNames(names)}
@@ -244,7 +245,7 @@ export const Meeting = ({ title, users = [], profile }: MeetingImageProps) => {
             tw="flex mt-3 w-[1040px] overflow-hidden"
             style={{
               whiteSpace: "nowrap",
-              fontFamily: "inter",
+              fontFamily: "ubuntu",
               textOverflow: "ellipsis",
             }}>
             {title}
@@ -297,12 +298,9 @@ export const App = ({ name, description, logoUrl }: AppImageProps) => {
 
   return (
     <Wrapper variant={config.variant}>
-      <img
-        src={`${WEBAPP_URL}/${config.logo}`}
-        width={config.logoWidth}
-        alt="Logo"
-        tw="absolute right-[48px] top-[48px]"
-      />
+      <div tw="absolute right-[48px] top-[48px] flex">
+        <BrandWordmark width={120} />
+      </div>
 
       <VisualBlur logoUrl={logoUrl} />
 
@@ -317,10 +315,10 @@ export const App = ({ name, description, logoUrl }: AppImageProps) => {
         </div>
       </div>
       <div style={{ color: "#111827" }} tw="flex mt-auto w-full flex-col">
-        <div tw="flex text-[64px] mb-7" style={{ fontFamily: "cal", fontWeight: 600 }}>
+        <div tw="flex text-[64px] mb-7" style={{ fontFamily: "ubuntu", fontWeight: 500 }}>
           {name}
         </div>
-        <div tw="flex text-[36px]" style={{ fontFamily: "inter" }}>
+        <div tw="flex text-[36px]" style={{ fontFamily: "ubuntu" }}>
           {description}
         </div>
       </div>
@@ -339,15 +337,15 @@ export const Generic = ({ title, description }: GenericImageProps) => {
   return (
     <Wrapper variant={config.variant}>
       <div tw="h-full flex flex-col justify-start">
-        <div tw="flex items-center justify-center" style={{ fontFamily: "cal", fontWeight: 300 }}>
-          <img src={`${WEBAPP_URL}/${config.logo}`} width={config.logoWidth} alt="Logo" />
+        <div tw="flex items-center justify-center">
+          <BrandWordmark width={230} />
         </div>
 
         <div style={{ color: "#111827" }} tw="relative flex text-[54px] w-full flex-col mt-auto">
-          <div tw="flex w-[1040px]" style={{ fontFamily: "cal" }}>
+          <div tw="flex w-[1040px]" style={{ fontFamily: "ubuntu", fontWeight: 500 }}>
             {title}
           </div>
-          <div tw="flex mt-3 w-[1040px]" style={{ fontFamily: "inter" }}>
+          <div tw="flex mt-3 w-[1040px]" style={{ fontFamily: "ubuntu" }}>
             {description}
           </div>
         </div>
