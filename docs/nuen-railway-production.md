@@ -9,6 +9,9 @@ Create these services in one Railway project and environment:
 - `web`: Build the repository root with `Dockerfile`. Expose it through `cal.nuen.io` on port `3000`.
 - `Postgres`: Use Railway PostgreSQL. Keep it on Railway's private network without a public domain.
 
+Start with one `web` replica. The database is the shared source of truth, so a second replica can be added later
+without changing the application architecture. Keep at least one previous successful deployment available for rollback.
+
 Set the `web` health check path to `/api/health`. A healthy response is HTTP 200 with `{"status":"ok"}`. A database failure returns HTTP 503 without an error message or connection detail.
 
 Use separate Railway environments for staging and production. Give each environment separate Google, email, and encryption credentials.
@@ -24,7 +27,7 @@ Set these variables on the `web` service. Store generated values and provider cr
 | `DATABASE_HOST` | `${{Postgres.PGHOST}}:${{Postgres.PGPORT}}`. The startup check requires both values. |
 | `PORT` | `3000` |
 | `NEXT_PUBLIC_WEBAPP_URL` | `https://cal.nuen.io` |
-| `NEXTAUTH_URL` | `https://cal.nuen.io/api/auth` |
+| `NEXTAUTH_URL` | `https://cal.nuen.io` |
 | `NEXTAUTH_SECRET` | Generate a unique secret with `openssl rand -base64 32`. |
 | `CALENDSO_ENCRYPTION_KEY` | Generate the required 32-character value with `openssl rand -base64 24`. |
 | `GOOGLE_LOGIN_ENABLED` | `true` |
@@ -33,17 +36,23 @@ Set these variables on the `web` service. Store generated values and provider cr
 | `GOOGLE_WORKSPACE_AUTH_DOMAIN` | `nuen.io` |
 | `GOOGLE_WORKSPACE_ADMIN_EMAILS` | Comma-separated Nuen system administrators; set before their first sign-in. |
 | `NEXT_PUBLIC_DISABLE_SIGNUP` | `true` |
+| `ORGANIZATIONS_ENABLED` | `false`; Nuen uses root Teams, not the commercial Organizations layer. |
 | `RESEND_API_KEY` | A restricted Resend API key for the verified Nuen sending domain. |
 | `EMAIL_FROM` | A verified address such as `calendar@nuen.io`. |
 | `EMAIL_FROM_NAME` | `Nuen` |
 | `CRON_SECRET` | Generate a separate random secret for scheduled endpoint calls. |
 | `CALCOM_TELEMETRY_DISABLED` | `1` |
 
-The Google OAuth client must allow this redirect URI:
+The Google OAuth client must allow both redirect URIs:
 
 ```text
 https://cal.nuen.io/api/auth/callback/google
+https://cal.nuen.io/api/integrations/googlecalendar/callback
 ```
+
+Configure the Google Cloud OAuth consent screen as an Internal Workspace app. Enable the Google Calendar
+API and grant `calendar.events` and `calendar.readonly`; sign-in alone does not connect a user's calendar.
+Add `https://cal.nuen.io` as an authorized JavaScript origin.
 
 The application access policy must also enforce the exact `nuen.io` email domain on the server. Google OAuth configuration alone is not an application authorization control.
 
@@ -117,6 +126,27 @@ Add an external uptime monitor for `https://cal.nuen.io/api/health`; Railway's d
 
 Removing an address from `GOOGLE_WORKSPACE_ADMIN_EMAILS` does not demote an existing administrator or invalidate sessions. During offboarding, demote or lock the database user, revoke their Google OAuth grant, remove Team memberships, and invalidate active sessions before removing the address from the variable.
 
+## Initial Nuen setup
+
+Perform this once in staging, repeat it in production, and record the Team and event URLs:
+
+1. Have each of the three users sign in with their verified `@nuen.io` Google account so the local user exists.
+2. Have a configured system administrator create the `Recruitment`, `Billing`, and `HR` root Teams.
+3. Add the appropriate existing Workspace users to each Team. Give routine schedulers `MEMBER`; give Team maintainers `ADMIN`.
+4. In each user's Apps page, connect Google Calendar, choose the calendars used for conflict checks, and select the destination calendar.
+5. Install Google Meet and make it the location for event types that need a video call.
+6. Have a Team owner or administrator create the round-robin event, then add the participating Team members as hosts and confirm each host has usable availability.
+7. Configure and rebuild the Nuen website with these public variables:
+
+   | Variable | Value |
+   | --- | --- |
+   | `NEXT_PUBLIC_CAL_ORIGIN` | `https://cal.nuen.io` |
+   | `NEXT_PUBLIC_CAL_HIRING_URL` | `https://cal.nuen.io/team/recruitment/hiring-call` |
+   | `NEXT_PUBLIC_CAL_RECRUITER_URL` | `https://cal.nuen.io/team/recruitment/recruiter-intro` |
+
+   The Nuen website validates both booking URLs against `NEXT_PUBLIC_CAL_ORIGIN`, adds `/embed` only inside
+   its iframe, and uses the same origin in its Content Security Policy.
+
 ## Release checks
 
 Complete these checks in staging before production traffic starts:
@@ -131,4 +161,4 @@ Complete these checks in staging before production traffic starts:
 8. Confirm that transactional email passes SPF, DKIM, and DMARC checks.
 9. Run one backup restore drill and save the result outside Railway.
 
-See the Railway documentation for [health checks](https://docs.railway.com/reference/healthchecks), [cron jobs](https://docs.railway.com/cron-jobs), [variables](https://docs.railway.com/variables), and [PostgreSQL recovery](https://docs.railway.com/guides/postgres-backups-restores).
+See the Railway documentation for [health checks](https://docs.railway.com/deployments/healthchecks), [cron jobs](https://docs.railway.com/cron-jobs), [variables](https://docs.railway.com/variables), and [PostgreSQL recovery](https://docs.railway.com/guides/postgres-backups-restores).
