@@ -12,6 +12,9 @@ export const TEAM_PERMISSIONS = [
   "eventType.delete",
   "team.read",
   "webhook.create",
+  "webhook.read",
+  "webhook.update",
+  "webhook.delete",
 ] as const;
 
 export type TeamPermission = (typeof TEAM_PERMISSIONS)[number];
@@ -26,6 +29,9 @@ export const TEAM_PERMISSION_ROLE_POLICY: Record<TeamPermission, readonly Member
   "eventType.delete": [MembershipRole.ADMIN, MembershipRole.OWNER],
   "team.read": [MembershipRole.ADMIN, MembershipRole.OWNER],
   "webhook.create": [MembershipRole.ADMIN, MembershipRole.OWNER],
+  "webhook.read": [MembershipRole.ADMIN, MembershipRole.OWNER],
+  "webhook.update": [MembershipRole.ADMIN, MembershipRole.OWNER],
+  "webhook.delete": [MembershipRole.ADMIN, MembershipRole.OWNER],
 };
 
 export const isTeamPermission = (permission: string): permission is TeamPermission =>

@@ -1,5 +1,4 @@
 import type { Webhook } from "@calcom/features/webhooks/lib/dto/types";
-
 import { router } from "../../../trpc";
 import { ZCreateInputSchema } from "./create.schema";
 import { ZDeleteInputSchema } from "./delete.schema";
@@ -22,7 +21,7 @@ type WebhookRouterHandlerCache = {
 const UNSTABLE_HANDLER_CACHE: WebhookRouterHandlerCache = {};
 
 export const webhookRouter = router({
-  list: createWebhookProcedure()
+  list: createWebhookProcedure("webhook.read")
     .input(ZListInputSchema)
     .query(async ({ ctx, input }): Promise<Webhook[]> => {
       if (!UNSTABLE_HANDLER_CACHE.list) {
@@ -40,7 +39,7 @@ export const webhookRouter = router({
       });
     }),
 
-  get: createWebhookProcedure()
+  get: createWebhookProcedure("webhook.read")
     .input(ZGetInputSchema)
     .query(async ({ ctx, input }) => {
       if (!UNSTABLE_HANDLER_CACHE.get) {
@@ -58,7 +57,7 @@ export const webhookRouter = router({
       });
     }),
 
-  create: createWebhookProcedure()
+  create: createWebhookProcedure("webhook.create")
     .input(ZCreateInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (!UNSTABLE_HANDLER_CACHE.create) {
@@ -76,7 +75,7 @@ export const webhookRouter = router({
       });
     }),
 
-  edit: createWebhookProcedure()
+  edit: createWebhookProcedure("webhook.update")
     .input(ZEditInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (!UNSTABLE_HANDLER_CACHE.edit) {
@@ -94,7 +93,7 @@ export const webhookRouter = router({
       });
     }),
 
-  delete: createWebhookProcedure()
+  delete: createWebhookProcedure("webhook.delete")
     .input(ZDeleteInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (!UNSTABLE_HANDLER_CACHE.delete) {
@@ -112,7 +111,7 @@ export const webhookRouter = router({
       });
     }),
 
-  testTrigger: createWebhookProcedure()
+  testTrigger: createWebhookProcedure("webhook.read")
     .input(ZTestTriggerInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (!UNSTABLE_HANDLER_CACHE.testTrigger) {
@@ -132,7 +131,7 @@ export const webhookRouter = router({
       });
     }),
 
-  getByViewer: createWebhookProcedure().query(
+  getByViewer: createWebhookProcedure("webhook.read").query(
     async ({ ctx }): Promise<import("./getByViewer.handler").WebhooksByViewer> => {
       if (!UNSTABLE_HANDLER_CACHE.getByViewer) {
         UNSTABLE_HANDLER_CACHE.getByViewer = await import("./getByViewer.handler").then(

@@ -72,6 +72,30 @@ describe("TeamPermissionService", () => {
     );
   });
 
+  it("does not allow members to read or modify team webhooks", async () => {
+    mocks.findFirst.mockResolvedValue({ id: 1 });
+    const service = new TeamPermissionService();
+
+    await expect(
+      service.checkPermission({
+        userId: 10,
+        teamId: 20,
+        permission: "webhook.read",
+        fallbackRoles: [MembershipRole.MEMBER],
+      })
+    ).resolves.toBe(false);
+
+    await expect(
+      service.checkPermission({
+        userId: 10,
+        teamId: 20,
+        permission: "webhook.update",
+        fallbackRoles: [MembershipRole.MEMBER],
+      })
+    ).resolves.toBe(false);
+    expect(mocks.findFirst).not.toHaveBeenCalled();
+  });
+
   it("returns only root non-organization team ids", async () => {
     mocks.findMany.mockResolvedValue([{ teamId: 20 }, { teamId: 30 }]);
 
