@@ -1,7 +1,5 @@
+import { COMPANY_NAME, WEBAPP_URL } from "@calcom/lib/constants";
 import type { TFunction } from "i18next";
-
-import { WEBAPP_URL, COMPANY_NAME } from "@calcom/lib/constants";
-
 import { V2BaseEmailHtml } from "../components";
 
 interface DailyVideoDownloadTranscriptEmailProps {
@@ -22,22 +20,22 @@ export const DailyVideoDownloadTranscriptEmail = (
         title: props.title,
         date: props.date,
       })}>
-      <div style={{ width: "89px", marginBottom: "35px" }}>
+      <div style={{ width: "86px", marginBottom: "35px" }}>
         <a href={WEBAPP_URL} target="_blank" rel="noreferrer">
           <img
-            height="19"
+            height="22"
             src={image}
             style={{
               border: "0",
               display: "block",
               outline: "none",
               textDecoration: "none",
-              height: "19px",
+              height: "22px",
               width: "100%",
               fontSize: "13px",
             }}
-            width="89"
-            alt=""
+            width="86"
+            alt="Nuen"
           />
         </a>
       </div>
@@ -63,7 +61,9 @@ export const DailyVideoDownloadTranscriptEmail = (
           <div
             key={`transcript-${index}`}
             style={{
-              backgroundColor: "#F3F4F6",
+              backgroundColor: "#F8F9FA",
+              border: "1px solid #DFE0E7",
+              borderRadius: "12px",
               padding: "32px",
               marginBottom: "40px",
             }}>
