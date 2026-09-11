@@ -73,7 +73,7 @@ Set these variables before the Docker build. Railway rebuilds the image when a s
 | `NEXT_PUBLIC_EMBED_LIB_URL` | `https://cal.nuen.io/embed/embed.js` |
 | `EMAIL_FROM_NAME` | `Nuen` |
 
-These values change product names, support links, email sender names, and the embed origin. Logo files, icons, colors, and typography require the separate Nuen interface changes.
+These values change product names, support links, email sender names, and the embed origin. This branch also includes the Nuen logo, browser icons, colors, and typography defaults.
 
 ## Scheduled work
 
