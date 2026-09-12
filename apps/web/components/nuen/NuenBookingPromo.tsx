@@ -24,9 +24,6 @@ export const NuenBookingPromo = (): JSX.Element => {
             {t("nuen_booking_promo_headline_accent")}
           </span>
         </p>
-        <p className="mx-auto mt-6 max-w-2xl text-base text-slate-300 leading-7 sm:text-lg">
-          {t("nuen_booking_promo_description")}
-        </p>
       </div>
     </section>
   );

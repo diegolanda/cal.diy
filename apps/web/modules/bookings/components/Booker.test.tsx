@@ -270,6 +270,11 @@ describe("Booker", () => {
     expect(screen.getByTestId("nuen-booking-promo-headline")).toHaveTextContent(
       "Hire senior LATAM engineers without the agency markup."
     );
+    expect(
+      screen.queryByText(
+        "Start with one engineer at 10–20 hours a week. You see the rate, 75% of it goes to the engineer, and you scale only when the fit is real."
+      )
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("nuen-booking-promo-headline").parentElement).toHaveClass("text-center");
     expect(screen.getByTestId("nuen-booking-promo-headline-lead")).toHaveClass("block", "whitespace-nowrap");
     expect(screen.getByTestId("nuen-booking-promo-headline-accent")).toHaveClass(
