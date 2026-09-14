@@ -47,6 +47,7 @@ Set these variables on the `web` service. Store generated values and provider cr
 | `NEXT_PUBLIC_DISABLE_SIGNUP` | `true` |
 | `ORGANIZATIONS_ENABLED` | `false`; Nuen uses root Teams, not the commercial Organizations layer. |
 | `RESEND_API_KEY` | A restricted Resend API key for the verified Nuen sending domain. |
+| `EMAIL_SERVER_PORT` | `2465`; Railway can reach Resend on this secure alternative SMTP port. |
 | `EMAIL_FROM` | A verified address such as `calendar@nuen.io`. |
 | `EMAIL_FROM_NAME` | `Nuen` |
 | `CRON_SECRET` | Generate a separate random secret for scheduled endpoint calls. |

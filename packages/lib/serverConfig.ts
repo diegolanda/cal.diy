@@ -1,16 +1,18 @@
+import process from "node:process";
+import { isENVDev } from "@calcom/lib/env";
 import type SendmailTransport from "nodemailer/lib/sendmail-transport";
 import type SMTPConnection from "nodemailer/lib/smtp-connection";
-
-import { isENVDev } from "@calcom/lib/env";
-
 import { getAdditionalEmailHeaders } from "./getAdditionalEmailHeaders";
 
 function detectTransport(): SendmailTransport.Options | SMTPConnection.Options | string {
   if (process.env.RESEND_API_KEY) {
+    const configuredPort = Number.parseInt(process.env.EMAIL_SERVER_PORT || "465", 10);
+    let port = 465;
+    if (configuredPort > 0 && configuredPort <= 65535) port = configuredPort;
     const transport = {
       host: "smtp.resend.com",
-      secure: true,
-      port: 465,
+      secure: port === 465 || port === 2465,
+      port,
       auth: {
         user: "resend",
         pass: process.env.RESEND_API_KEY,
@@ -25,7 +27,7 @@ function detectTransport(): SendmailTransport.Options | SMTPConnection.Options |
   }
 
   if (process.env.EMAIL_SERVER_HOST) {
-    const port = parseInt(process.env.EMAIL_SERVER_PORT || "");
+    const port = parseInt(process.env.EMAIL_SERVER_PORT || "", 10);
     const auth =
       process.env.EMAIL_SERVER_USER && process.env.EMAIL_SERVER_PASSWORD
         ? {
