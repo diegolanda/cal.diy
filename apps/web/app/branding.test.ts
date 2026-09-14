@@ -29,6 +29,15 @@ describe("Nuen brand assets", () => {
       expect(wordmark).not.toMatch(/<text\b|font-family=/);
     }
   });
+
+  it("provides a four-times-density email wordmark", async () => {
+    const emailWordmark = await readFile(
+      resolve(process.cwd(), "apps/web/public/emails/nuen-wordmark@4x.png")
+    );
+
+    expect(emailWordmark.readUInt32BE(16)).toBe(256);
+    expect(emailWordmark.readUInt32BE(20)).toBe(104);
+  });
 });
 
 describe("Nuen theme", () => {

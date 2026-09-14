@@ -5,7 +5,7 @@ import Row from "./Row";
 const CommentIE = ({ html = "" }) => <RawHtml html={`<!--[if mso | IE]>${html}<![endif]-->`} />;
 
 const EmailBodyLogo = () => {
-  const image = `${WEBAPP_URL}/emails/logo.png`;
+  const image = `${WEBAPP_URL}/emails/nuen-wordmark@4x.png`;
 
   return (
     <>
@@ -44,21 +44,21 @@ const EmailBodyLogo = () => {
                     wordBreak: "break-word",
                   }}>
                   <Row border="0" style={{ borderCollapse: "collapse", borderSpacing: "0px" }}>
-                    <td style={{ width: "86px" }}>
+                    <td style={{ width: "64px" }}>
                       <a href={WEBAPP_URL} target="_blank" rel="noreferrer">
                         <img
-                          height="22"
+                          height="26"
                           src={image}
                           style={{
                             border: "0",
                             display: "block",
                             outline: "none",
                             textDecoration: "none",
-                            height: "22px",
-                            width: "100%",
+                            height: "26px",
+                            width: "64px",
                             fontSize: "13px",
                           }}
-                          width="86"
+                          width="64"
                           alt="Nuen"
                         />
                       </a>

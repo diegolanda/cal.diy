@@ -13,28 +13,28 @@ interface DailyVideoDownloadRecordingEmailProps {
 export const DailyVideoDownloadRecordingEmail = (
   props: DailyVideoDownloadRecordingEmailProps & Partial<React.ComponentProps<typeof V2BaseEmailHtml>>
 ) => {
-  const image = `${WEBAPP_URL}/emails/logo.png`;
+  const image = `${WEBAPP_URL}/emails/nuen-wordmark@4x.png`;
   return (
     <V2BaseEmailHtml
       subject={props.language("download_your_recording", {
         title: props.title,
         date: props.date,
       })}>
-      <div style={{ width: "86px", marginBottom: "35px" }}>
+      <div style={{ width: "64px", marginBottom: "35px" }}>
         <a href={WEBAPP_URL} target="_blank" rel="noreferrer">
           <img
-            height="22"
+            height="26"
             src={image}
             style={{
               border: "0",
               display: "block",
               outline: "none",
               textDecoration: "none",
-              height: "22px",
-              width: "100%",
+              height: "26px",
+              width: "64px",
               fontSize: "13px",
             }}
-            width="86"
+            width="64"
             alt="Nuen"
           />
         </a>
