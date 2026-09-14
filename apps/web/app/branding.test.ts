@@ -49,5 +49,8 @@ describe("Nuen theme", () => {
 
     expect(result.css).toMatch(/\.font-mono\s*\{[^}]*font-family:\s*var\(--font-mono\)/);
     expect(result.css).toMatch(/\.shadow-card\s*\{[^}]*box-shadow:/);
+    expect(result.css).toMatch(
+      /\.nuen-booking-background label\[for="overlayCalendar"\]\s*\{[^}]*color:\s*var\(--nuen-surface\)/
+    );
   });
 });

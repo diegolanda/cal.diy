@@ -123,6 +123,10 @@
     100% 100%;
 }
 
+.nuen-booking-background label[for="overlayCalendar"] {
+  color: var(--nuen-surface);
+}
+
 ::-moz-selection {
   color: var(--cal-brand-text);
   background: var(--cal-brand);
