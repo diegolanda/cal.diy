@@ -38,6 +38,15 @@ describe("Nuen brand assets", () => {
     expect(emailWordmark.readUInt32BE(16)).toBe(256);
     expect(emailWordmark.readUInt32BE(20)).toBe(104);
   });
+
+  it("uses the web slot endpoint for public team events", async () => {
+    const publicEventView = await readFile(
+      resolve(process.cwd(), "apps/web/modules/users/views/users-type-public-view.tsx"),
+      "utf8"
+    );
+
+    expect(publicEventView).toContain("useApiV2={!isTeamEvent}");
+  });
 });
 
 describe("Nuen theme", () => {
@@ -50,7 +59,7 @@ describe("Nuen theme", () => {
     expect(result.css).toMatch(/\.font-mono\s*\{[^}]*font-family:\s*var\(--font-mono\)/);
     expect(result.css).toMatch(/\.shadow-card\s*\{[^}]*box-shadow:/);
     expect(result.css).toMatch(
-      /\.nuen-booking-background label\[for="overlayCalendar"\]\s*\{[^}]*color:\s*var\(--nuen-surface\)/
+      /\.nuen-booking-campaign-header label\[for="overlayCalendar"\]\s*\{[^}]*color:\s*var\(--nuen-surface\)/
     );
   });
 });

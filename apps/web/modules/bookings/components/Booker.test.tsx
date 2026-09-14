@@ -265,8 +265,14 @@ describe("Booker", () => {
     });
 
     const promo = screen.getByTestId("nuen-booking-promo");
+    const headerSection = screen.getByTestId("header").parentElement;
     expect(promo).toBeInTheDocument();
     expect(promo.parentElement).toHaveClass("nuen-booking-background");
+    if (layout === BookerLayouts.MONTH_VIEW) {
+      expect(headerSection).toHaveClass("nuen-booking-campaign-header");
+    } else {
+      expect(headerSection).not.toHaveClass("nuen-booking-campaign-header");
+    }
     expect(screen.getByTestId("nuen-booking-promo-headline")).toHaveTextContent(
       "Hire senior LATAM engineers without the agency markup."
     );

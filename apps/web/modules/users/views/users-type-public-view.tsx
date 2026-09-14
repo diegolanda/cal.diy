@@ -45,6 +45,7 @@ function Type({
           durationConfig={eventData.metadata?.multipleDuration}
           orgBannerUrl={orgBannerUrl}
           isTeamEvent={isTeamEvent}
+          useApiV2={!isTeamEvent}
           /* TODO: Currently unused, evaluate it is needed-
            *       Possible alternative approach is to have onDurationChange.
            */
