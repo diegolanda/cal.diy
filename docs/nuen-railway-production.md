@@ -12,6 +12,10 @@ Create these services in one Railway project and environment:
 Start with one `web` replica. The database is the shared source of truth, so a second replica can be added later
 without changing the application architecture. Keep at least one previous successful deployment available for rollback.
 
+The Docker image starts the generated Next.js standalone server directly after URL replacement, migrations, and app-store seeding.
+It keeps the server in `apps/web/server.js`, beside the existing `public` and `.next/static` directories.
+This avoids persistent Yarn and Turbo launcher processes. Runtime dependencies remain available for startup tasks.
+
 Set the `web` health check path to `/api/health`. A healthy response is HTTP 200 with `{"status":"ok"}`. A database failure returns HTTP 503 without an error message or connection detail.
 Set `RAILWAY_HEALTHCHECK_TIMEOUT_SEC=600` on the `web` service so database migrations can finish before Railway stops the deployment.
 

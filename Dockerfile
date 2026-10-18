@@ -73,6 +73,8 @@ COPY --from=builder /calcom/yarn.lock ./yarn.lock
 COPY --from=builder /calcom/node_modules ./node_modules
 COPY --from=builder /calcom/packages ./packages
 COPY --from=builder /calcom/apps/web ./apps/web
+# Keep the existing runtime files available to both the standalone server and startup tasks.
+COPY --from=builder /calcom/apps/web/.next/standalone/apps/web/server.js ./apps/web/server.js
 COPY --from=builder /calcom/packages/prisma/schema.prisma ./prisma/schema.prisma
 COPY scripts scripts
 RUN chmod +x scripts/*

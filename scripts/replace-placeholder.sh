@@ -8,6 +8,6 @@ fi
 
 echo "Replacing all statically built instances of $FROM with $TO."
 
-for file in $(egrep -r -l "${FROM}" apps/web/.next/ apps/web/public/); do
+for file in $(egrep -r -l "${FROM}" apps/web/.next/ apps/web/public/ apps/web/server.js); do
     sed -i -e "s|$FROM|$TO|g" "$file"
 done
