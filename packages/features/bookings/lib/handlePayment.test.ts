@@ -1,5 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handlePayment } from "./handlePayment";
 
 vi.mock("@calcom/app-store/zod-utils", () => ({
@@ -10,23 +9,24 @@ vi.mock("@calcom/app-store/zod-utils", () => ({
 
 vi.mock("@calcom/app-store/payment.services.generated", () => ({
   PaymentServiceMap: {
-    stripepayment: Promise.resolve({
-      BuildPaymentService: () => ({
-        create: async (paymentData: { amount: number; currency: string }) => ({
-          ...paymentData,
-          id: "mock-payment-id",
-          externalId: "mock-external-id",
-          success: true,
+    stripepayment: () =>
+      Promise.resolve({
+        BuildPaymentService: () => ({
+          create: async (paymentData: { amount: number; currency: string }) => ({
+            ...paymentData,
+            id: "mock-payment-id",
+            externalId: "mock-external-id",
+            success: true,
+          }),
+          collectCard: async (paymentData: { amount: number; currency: string }) => ({
+            ...paymentData,
+            id: "mock-payment-id",
+            externalId: "mock-external-id",
+            success: true,
+          }),
+          afterPayment: async () => true,
         }),
-        collectCard: async (paymentData: { amount: number; currency: string }) => ({
-          ...paymentData,
-          id: "mock-payment-id",
-          externalId: "mock-external-id",
-          success: true,
-        }),
-        afterPayment: async () => true,
       }),
-    }),
   },
 }));
 

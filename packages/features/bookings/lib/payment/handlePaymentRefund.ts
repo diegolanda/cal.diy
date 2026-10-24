@@ -1,5 +1,5 @@
 import { PaymentServiceMap } from "@calcom/app-store/payment.services.generated";
-import type { Payment, Prisma, AppCategories } from "@calcom/prisma/client";
+import type { AppCategories, Payment, Prisma } from "@calcom/prisma/client";
 import type { IAbstractPaymentService } from "@calcom/types/PaymentService";
 
 const handlePaymentRefund = async (
@@ -20,7 +20,7 @@ const handlePaymentRefund = async (
     return false;
   }
 
-  const paymentAppModule = await paymentAppImportFn;
+  const paymentAppModule = await paymentAppImportFn();
   if (!paymentAppModule?.BuildPaymentService) {
     console.warn(`payment App service not found for key: ${key}`);
     return false;

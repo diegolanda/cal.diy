@@ -1,8 +1,6 @@
 import { VideoApiAdapterMap } from "@calcom/app-store/video.adapters.generated";
 import type { TrpcSessionUser } from "@calcom/trpc/server/types";
-
 import { TRPCError } from "@trpc/server";
-
 import type { TGetMeetingInformationInputSchema } from "./getMeetingInformation.schema";
 
 type GetMeetingInformationOptions = {
@@ -24,7 +22,7 @@ export const getMeetingInformationHandler = async ({ ctx: _ctx, input }: GetMeet
       });
     }
 
-    const dailyVideoAdapterModule = await dailyVideoAdapterImport;
+    const dailyVideoAdapterModule = await dailyVideoAdapterImport();
     const videoApiAdapter = dailyVideoAdapterModule.default();
 
     if (!videoApiAdapter || !videoApiAdapter.getMeetingInformation) {

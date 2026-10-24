@@ -1,23 +1,27 @@
 import { PaymentServiceMap } from "@calcom/app-store/payment.services.generated";
 import { sendNoShowFeeChargedEmail } from "@calcom/emails/billing-email-service";
 import { CredentialRepository } from "@calcom/features/credentials/repositories/CredentialRepository";
+import { getTranslation } from "@calcom/i18n/server";
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
-import { getTranslation } from "@calcom/i18n/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handleNoShowFee } from "./handleNoShowFee";
 
-vi.mock("@calcom/app-store/payment.services.generated", () => ({
-  PaymentServiceMap: {
-    stripepayment: Promise.resolve({
-      BuildPaymentService: vi.fn().mockImplementation(function () {
-        return {
-          chargeCard: vi.fn(),
-        };
-      }),
+vi.mock("@calcom/app-store/payment.services.generated", () => {
+  const paymentServiceModule = {
+    BuildPaymentService: vi.fn().mockImplementation(function () {
+      return {
+        chargeCard: vi.fn(),
+      };
     }),
-  },
-}));
+  };
+
+  return {
+    PaymentServiceMap: {
+      stripepayment: () => Promise.resolve(paymentServiceModule),
+    },
+  };
+});
 
 vi.mock("@calcom/emails/billing-email-service", () => ({
   sendNoShowFeeChargedEmail: vi.fn(),
@@ -34,7 +38,6 @@ vi.mock("@calcom/features/credentials/repositories/CredentialRepository", () => 
   },
 }));
 
-
 vi.mock("@calcom/prisma", () => ({
   default: {},
   prisma: {},
@@ -49,7 +52,7 @@ describe("handleNoShowFee", () => {
       chargeCard: vi.fn(),
     };
 
-    const paymentServiceModule = await PaymentServiceMap.stripepayment;
+    const paymentServiceModule = await PaymentServiceMap.stripepayment();
     vi.mocked(paymentServiceModule.BuildPaymentService).mockImplementation(function () {
       return mockPaymentService;
     });
@@ -266,7 +269,7 @@ describe("handleNoShowFee", () => {
     it("should throw error when payment service is not found", async () => {
       const originalStripepayment = PaymentServiceMap.stripepayment;
       // @ts-expect-error - Mocking for test
-      PaymentServiceMap.stripepayment = Promise.resolve({});
+      PaymentServiceMap.stripepayment = () => Promise.resolve({});
 
       vi.mocked(CredentialRepository.findPaymentCredentialByAppIdAndUserIdOrTeamId).mockResolvedValue(
         mockCredential

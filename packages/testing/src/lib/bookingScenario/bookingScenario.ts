@@ -61,10 +61,10 @@ function getOrCreateCalendarServiceMock(key: string): ReturnType<typeof vi.fn> {
 }
 
 vi.mock("@calcom/app-store/calendar.services.generated", () => ({
-  CalendarServiceMap: new Proxy({} as Record<string, Promise<{ default: ReturnType<typeof vi.fn> }>>, {
+  CalendarServiceMap: new Proxy({} as Record<string, () => Promise<{ default: ReturnType<typeof vi.fn> }>>, {
     get(_target, prop: string) {
       if (typeof prop === "symbol") return undefined;
-      return Promise.resolve({ default: getOrCreateCalendarServiceMock(prop) });
+      return () => Promise.resolve({ default: getOrCreateCalendarServiceMock(prop) });
     },
   }),
 }));
@@ -77,9 +77,9 @@ vi.mock("@calcom/app-store/video.adapters.generated", () => ({
     {
       get(_target, prop) {
         if (typeof prop === "string" && mockVideoAdapterRegistry[prop]) {
-          return mockVideoAdapterRegistry[prop];
+          return () => mockVideoAdapterRegistry[prop];
         }
-        return Promise.resolve({ default: vi.fn() });
+        return () => Promise.resolve({ default: vi.fn() });
       },
     }
   ),
@@ -1722,10 +1722,7 @@ export async function mockCalendar(
           throw new Error("MockCalendarService.createEvent fake error");
         }
         const [calEvent, credentialId, externalCalendarId] = rest;
-        log.debug(
-          "mockCalendar.createEvent",
-          JSON.stringify({ calEvent, credentialId, externalCalendarId })
-        );
+        log.debug("mockCalendar.createEvent", JSON.stringify({ calEvent, credentialId, externalCalendarId }));
         createEventCalls.push({
           args: {
             calEvent,
@@ -1750,8 +1747,7 @@ export async function mockCalendar(
               "https://GOOGLE_MEET_URL_IN_CALENDAR_EVENT",
             uid: normalizedCalendarData.create?.uid || "GOOGLE_CALENDAR_EVENT_ID",
             id: normalizedCalendarData.create?.id || "GOOGLE_CALENDAR_EVENT_ID",
-            iCalUID:
-              normalizedCalendarData.create?.iCalUID || calEvent.iCalUID || "GOOGLE_CALENDAR_EVENT_ID",
+            iCalUID: normalizedCalendarData.create?.iCalUID || calEvent.iCalUID || "GOOGLE_CALENDAR_EVENT_ID",
             password: "MOCK_PASSWORD",
             url:
               normalizedCalendarData.create?.appSpecificData?.googleCalendar?.hangoutLink ||
@@ -1767,8 +1763,7 @@ export async function mockCalendar(
               normalizedCalendarData.create?.iCalUID || calEvent.iCalUID || "OFFICE_365_CALENDAR_EVENT_ID",
             password: "MOCK_PASSWORD",
             url:
-              normalizedCalendarData.create?.appSpecificData?.office365Calendar?.url ||
-              "https://UNUSED_URL",
+              normalizedCalendarData.create?.appSpecificData?.office365Calendar?.url || "https://UNUSED_URL",
           });
         } else {
           return Promise.resolve({

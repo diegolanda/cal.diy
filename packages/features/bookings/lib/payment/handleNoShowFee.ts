@@ -7,16 +7,16 @@ import {
   type EventTypeBrandingData,
   getEventTypeService,
 } from "@calcom/features/eventtypes/di/EventTypeService.container";
+import { getTranslation } from "@calcom/i18n/server";
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
 import logger from "@calcom/lib/logger";
-import { getTranslation } from "@calcom/i18n/server";
 import prisma from "@calcom/prisma";
 import type { Prisma } from "@calcom/prisma/client";
 import type { CalendarEvent } from "@calcom/types/Calendar";
 import type { IAbstractPaymentService } from "@calcom/types/PaymentService";
 
-export const handleNoShowFee= async ({
+export const handleNoShowFee = async ({
   booking,
   payment,
 }: {
@@ -145,7 +145,7 @@ export const handleNoShowFee= async ({
     log.error(`Payment app ${key} not implemented`);
     throw new Error("Payment app not implemented");
   }
-  const paymentApp = await paymentAppImportFn;
+  const paymentApp = await paymentAppImportFn();
   if (!paymentApp?.BuildPaymentService) {
     log.error(`Payment service not found for app ${key}`);
     throw new Error("Payment service not found");

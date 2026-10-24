@@ -145,10 +145,12 @@ function generateFiles() {
     objectName: string,
     {
       lazyImport = false,
+      deferImport = false,
       importConfig,
       entryObjectKeyGetter = (app) => app.name,
     }: {
       lazyImport?: boolean;
+      deferImport?: boolean;
       importConfig: ImportConfig;
       entryObjectKeyGetter?: (arg: App, importName?: string) => string;
     },
@@ -219,7 +221,8 @@ function generateFiles() {
                 )}")),`
               );
             } else {
-              output.push(`"${key}": import("${getModulePath(app.path, chosenConfig.fileToBeImported)}"),`);
+              const importExpression = `import("${getModulePath(app.path, chosenConfig.fileToBeImported)}")`;
+              output.push(`"${key}": ${deferImport ? `() => ${importExpression}` : importExpression},`);
             }
           }
         }
@@ -373,6 +376,7 @@ function generateFiles() {
         importName: "default",
       },
       lazyImport: true,
+      deferImport: true,
     },
     isCalendarApp
   );
@@ -443,6 +447,7 @@ function generateFiles() {
         importName: "PaymentService",
       },
       lazyImport: true,
+      deferImport: true,
     },
     (app: App) => {
       const hasPaymentService = fs.existsSync(path.join(APP_STORE_PATH, app.path, "lib/PaymentService.ts"));
@@ -461,6 +466,7 @@ function generateFiles() {
         importName: "default",
       },
       lazyImport: true,
+      deferImport: true,
     },
     (app: App) => {
       return fs.existsSync(path.join(APP_STORE_PATH, app.path, "lib/VideoApiAdapter.ts"));

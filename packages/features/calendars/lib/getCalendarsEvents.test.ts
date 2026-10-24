@@ -1,16 +1,14 @@
 import "@calcom/testing/lib/__mocks__/prisma";
 
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-
 import { symmetricDecrypt } from "@calcom/lib/crypto";
 import logger from "@calcom/lib/logger";
 import type { SelectedCalendar } from "@calcom/prisma/client";
 import type { EventBusyDate } from "@calcom/types/Calendar";
 import type { CredentialForCalendarService, CredentialPayload } from "@calcom/types/Credential";
-
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import getCalendarsEvents, {
-  getCalendarsEventsWithTimezones,
   filterSelectedCalendarsForCredential,
+  getCalendarsEventsWithTimezones,
 } from "./getCalendarsEvents";
 
 vi.mock("@calcom/lib/crypto", () => ({
@@ -27,28 +25,30 @@ const mockOfficeGetAvailabilityWithTimeZones = vi.fn().mockResolvedValue([]);
 vi.mock("@calcom/app-store/calendar.services.generated", () => {
   return {
     CalendarServiceMap: {
-      googlecalendar: Promise.resolve({
-        default: (credential: { id: number }) => ({
-          getCredentialId: () => credential.id,
-          createEvent: vi.fn().mockResolvedValue({}),
-          updateEvent: vi.fn().mockResolvedValue({}),
-          deleteEvent: vi.fn().mockResolvedValue({}),
-          getAvailability: mockGoogleGetAvailability,
-          getAvailabilityWithTimeZones: mockGoogleGetAvailabilityWithTimeZones,
-          listCalendars: vi.fn().mockResolvedValue([]),
+      googlecalendar: () =>
+        Promise.resolve({
+          default: (credential: { id: number }) => ({
+            getCredentialId: () => credential.id,
+            createEvent: vi.fn().mockResolvedValue({}),
+            updateEvent: vi.fn().mockResolvedValue({}),
+            deleteEvent: vi.fn().mockResolvedValue({}),
+            getAvailability: mockGoogleGetAvailability,
+            getAvailabilityWithTimeZones: mockGoogleGetAvailabilityWithTimeZones,
+            listCalendars: vi.fn().mockResolvedValue([]),
+          }),
         }),
-      }),
-      office365calendar: Promise.resolve({
-        default: (credential: { id: number }) => ({
-          getCredentialId: () => credential.id,
-          createEvent: vi.fn().mockResolvedValue({}),
-          updateEvent: vi.fn().mockResolvedValue({}),
-          deleteEvent: vi.fn().mockResolvedValue({}),
-          getAvailability: mockOfficeGetAvailability,
-          getAvailabilityWithTimeZones: mockOfficeGetAvailabilityWithTimeZones,
-          listCalendars: vi.fn().mockResolvedValue([]),
+      office365calendar: () =>
+        Promise.resolve({
+          default: (credential: { id: number }) => ({
+            getCredentialId: () => credential.id,
+            createEvent: vi.fn().mockResolvedValue({}),
+            updateEvent: vi.fn().mockResolvedValue({}),
+            deleteEvent: vi.fn().mockResolvedValue({}),
+            getAvailability: mockOfficeGetAvailability,
+            getAvailabilityWithTimeZones: mockOfficeGetAvailabilityWithTimeZones,
+            listCalendars: vi.fn().mockResolvedValue([]),
+          }),
         }),
-      }),
     },
   };
 });
@@ -739,7 +739,7 @@ describe("CalDAV credential leak prevention", () => {
       googleChannelResourceUri: null,
       googleChannelExpiration: null,
       delegationCredentialId: null,
-        error: null,
+      error: null,
       lastErrorAt: null,
       watchAttempts: 0,
       unwatchAttempts: 0,

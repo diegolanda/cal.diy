@@ -9,7 +9,6 @@ import { isTelemetryEnabled } from "@calcom/lib/sentryWrapper";
 import { prisma } from "@calcom/prisma";
 import type { Calendar, CalendarFetchMode } from "@calcom/types/Calendar";
 import type { CredentialForCalendarService } from "@calcom/types/Credential";
-
 import { CalendarServiceMap } from "../calendar.services.generated";
 
 const log = logger.getSubLogger({ prefix: ["CalendarManager"] });
@@ -36,7 +35,7 @@ export const getCalendar = async (
     return null;
   }
 
-  const calendarApp = await calendarAppImportFn;
+  const calendarApp = await calendarAppImportFn();
 
   const createCalendarService = calendarApp.default;
 
